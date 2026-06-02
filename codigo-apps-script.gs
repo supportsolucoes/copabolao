@@ -10,31 +10,47 @@ var WHATSAPP_TOKEN = 'COLE_AQUI_SEU_TOKEN_CALLMEBOT';
 var PRECO_UNIT     = 5.00;
 
 var JOGOS = [
-  { aba: 'Jogo1 - Brasil x Marrocos', nome: 'Brasil x Marrocos' },
-  { aba: 'Jogo2 - Brasil x Haiti',    nome: 'Brasil x Haiti'    },
-  { aba: 'Jogo3 - Escocia x Brasil',  nome: 'Escocia x Brasil'  }
+  { aba: 'Jogo1 - Brasil x Marrocos', nome: 'Brasil x Marrocos', time1: 'Brasil',  time2: 'Marrocos' },
+  { aba: 'Jogo2 - Brasil x Haiti',    nome: 'Brasil x Haiti',    time1: 'Brasil',  time2: 'Haiti'    },
+  { aba: 'Jogo3 - Escocia x Brasil',  nome: 'Escocia x Brasil',  time1: 'Escocia', time2: 'Brasil'   }
 ];
 
-var CABECALHO = [
+// Cabeçalho base — T1 e T2 são substituídos pelo nome dos times em cada aba
+var CABECALHO_BASE = [
   'Codigo', 'Data/Hora', 'Nome', 'WhatsApp', 'Email',
-  'Palpite T1', 'Palpite T2', 'Total Palpites', 'Total R$',
+  'GOL_T1', 'GOL_T2', 'Total Palpites', 'Total R$',
   'Comprovante?', 'Pagamento Confirmado?', 'Observacao'
 ];
+
+function cabecalhoJogo(jogo) {
+  return CABECALHO_BASE.map(function(c) {
+    if (c === 'GOL_T1') return jogo.time1;
+    if (c === 'GOL_T2') return jogo.time2;
+    return c;
+  });
+}
 
 // ── Inicializa abas da planilha ──────────────────────────────
 function inicializarPlanilha() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
   for (var i = 0; i < JOGOS.length; i++) {
     var jogo = JOGOS[i];
-    var aba = ss.getSheetByName(jogo.aba);
+    var cab  = cabecalhoJogo(jogo);
+    var aba  = ss.getSheetByName(jogo.aba);
     if (!aba) aba = ss.insertSheet(jogo.aba);
-    if (aba.getLastRow() === 0) {
-      var h = aba.getRange(1, 1, 1, CABECALHO.length);
-      h.setValues([CABECALHO]);
+    // Apaga e recria cabeçalho sempre (para atualizar nomes dos times)
+    if (aba.getLastRow() > 0) {
+      aba.getRange(1, 1, 1, cab.length).setValues([cab]);
+    } else {
+      var h = aba.getRange(1, 1, 1, cab.length);
+      h.setValues([cab]);
       h.setBackground('#002776').setFontColor('#ffffff').setFontWeight('bold');
       aba.setFrozenRows(1);
-      aba.setColumnWidths(1, CABECALHO.length, 150);
+      aba.setColumnWidths(1, cab.length, 150);
     }
+    // Garante formatação do cabeçalho
+    aba.getRange(1, 1, 1, cab.length)
+       .setBackground('#002776').setFontColor('#ffffff').setFontWeight('bold');
   }
   SpreadsheetApp.getUi().alert('Planilha inicializada com sucesso!');
 }
@@ -104,10 +120,15 @@ function salvarPalpite(p) {
     var jogo    = JOGOS[jogoIdx];
     if (!jogo) throw new Error('Jogo invalido: ' + jogoIdx);
 
+    var cab = cabecalhoJogo(jogo);
     var aba = ss.getSheetByName(jogo.aba);
     if (!aba) {
       aba = ss.insertSheet(jogo.aba);
-      aba.getRange(1, 1, 1, CABECALHO.length).setValues([CABECALHO]);
+      var h = aba.getRange(1, 1, 1, cab.length);
+      h.setValues([cab]);
+      h.setBackground('#002776').setFontColor('#ffffff').setFontWeight('bold');
+      aba.setFrozenRows(1);
+      aba.setColumnWidths(1, cab.length, 150);
     }
 
     var agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
@@ -128,7 +149,7 @@ function salvarPalpite(p) {
 
     aba.appendRow(linha);
     var ul = aba.getLastRow();
-    aba.getRange(ul, 1, 1, CABECALHO.length)
+    aba.getRange(ul, 1, 1, cab.length)
        .setBackground(ul % 2 === 0 ? '#f0f4ff' : '#ffffff');
 
     return resposta({ mensagem: 'Palpite registrado!' });
