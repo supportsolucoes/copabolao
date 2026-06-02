@@ -71,7 +71,7 @@ function doGet(e) {
   return resposta({ status: 'online', bolao: 'Copa 2026' });
 }
 
-// ── Salva palpite ─────────────────────────────────────────────
+// ── Salva palpite e atualiza prêmio ──────────────────────────
 function salvarPalpite(p) {
   try {
     var ss      = SpreadsheetApp.openById(SHEET_ID);
@@ -109,9 +109,38 @@ function salvarPalpite(p) {
     aba.getRange(ul, 1, 1, cab.length)
        .setBackground(ul % 2 === 0 ? '#f0f4ff' : '#ffffff');
 
+    // Atualiza prêmio acumulado automaticamente
+    atualizarPremioAcumulado(ss);
+
     return resposta({ mensagem: 'Palpite registrado!' });
   } catch (err) {
     return falha(err.message);
+  }
+}
+
+// ── Soma coluna I de todos os jogos e grava na aba Resultados ─
+function atualizarPremioAcumulado(ss) {
+  try {
+    var total = 0;
+    for (var i = 0; i < JOGOS.length; i++) {
+      var aba = ss.getSheetByName(JOGOS[i].aba);
+      if (!aba || aba.getLastRow() < 2) continue;
+      var vals = aba.getRange(2, 9, aba.getLastRow() - 1, 1).getValues();
+      for (var r = 0; r < vals.length; r++) {
+        var v = parseFloat(vals[r][0]);
+        if (!isNaN(v)) total += v;
+      }
+    }
+
+    // Grava o total acumulado em todas as linhas da aba Resultados (coluna F)
+    var abaRes = ss.getSheetByName('Resultados');
+    if (!abaRes || abaRes.getLastRow() < 2) return;
+    var numLinhas = abaRes.getLastRow() - 1;
+    for (var li = 0; li < numLinhas; li++) {
+      abaRes.getRange(li + 2, 6).setValue('R$ ' + total.toFixed(2).replace('.', ','));
+    }
+  } catch (err) {
+    console.error('Erro ao atualizar premio: ' + err.message);
   }
 }
 
@@ -178,7 +207,7 @@ function getDashboard() {
           jogo:      nomeJogo,
           resultado: g1Real + ' x ' + g2Real,
           acertaram: acertaram,
-          premio:    premio
+          premio:    totalPremio  // usa o total acumulado de todos os jogos
         });
       }
     }
