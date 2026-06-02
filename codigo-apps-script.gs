@@ -5,7 +5,7 @@
 //  Acesso: Qualquer pessoa | Execute como: Você
 // ============================================================
 
-const SHEET_ID        = '13HimvJoapVN_MdQXhQVan8SxsUTTy2bAE_FSYpqKHZQ';
+const SHEET_ID        = '1vrXtyJVpkHrroZptjpnH-FrZ2OMgZMJTqUJxPcVKJl8';
 const WHATSAPP_TOKEN  = 'COLE_AQUI_SEU_TOKEN_CALLMEBOT'; // ver instruções abaixo
 const PRECO_UNITARIO  = 5.00;
 
