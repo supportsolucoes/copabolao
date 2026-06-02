@@ -134,6 +134,13 @@
   .comp-instrucao { background:#fff8e1; border:1px solid #f5c842; border-radius:var(--radius); padding:.9rem 1rem; text-align:left; margin-bottom:.75rem; font-size:.84rem; color:#7a5800; line-height:1.6; }
   .comp-instrucao strong { color:#5a4000; }
 
+  /* PREVIEW MENSAGEM GRUPO */
+  .msg-preview-box { background:#f0fdf4; border:1.5px solid #86efac; border-radius:var(--radius); padding:1rem; margin-bottom:.75rem; text-align:left; }
+  .msg-preview-title { font-size:.82rem; font-weight:600; color:var(--texto); margin-bottom:.65rem; display:flex; align-items:center; gap:6px; }
+  .msg-preview-txt { background:white; border:1px solid #d1fae5; border-radius:8px; padding:.85rem 1rem; font-size:.82rem; color:var(--texto); line-height:1.7; white-space:pre-wrap; font-family:'Barlow',sans-serif; margin-bottom:.75rem; }
+  .btn-copiar-msg { width:100%; background:var(--verde); color:white; border:none; border-radius:var(--radius); padding:.7rem; font-family:'Bebas Neue',sans-serif; font-size:1.05rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity .15s; }
+  .btn-copiar-msg:hover { opacity:.9; }
+
   /* STATUS */
   .status-box { margin-top:1.5rem; background:var(--cinza-bg); border:1px solid var(--cinza-borda); border-radius:var(--radius); padding:1rem 1.1rem; text-align:left; }
   .status-box-title { font-size:.82rem; font-weight:600; color:var(--texto); margin-bottom:.75rem; display:flex; align-items:center; gap:6px; }
@@ -307,11 +314,32 @@
       Faça o Pix de <strong id="comp-total-txt">R$ 5,00</strong> para a chave <strong>(14) 99714-5171</strong> e envie o comprovante pelo WhatsApp informando seu código.
     </div>
 
+    <!-- MENSAGEM PARA O GRUPO -->
+    <div class="msg-preview-box">
+      <div class="msg-preview-title"><i class="ti ti-message-circle" style="font-size:16px;color:var(--verde)"></i> Mensagem para o grupo</div>
+      <div class="msg-preview-txt" id="msg-preview-txt"></div>
+      <button class="btn-copiar-msg" id="btn-copiar-msg" onclick="copiarMensagemGrupo()">
+        <i class="ti ti-copy" style="font-size:16px"></i> COPIAR MENSAGEM
+      </button>
+      <div id="msg-copiada" style="display:none;margin-top:8px;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius);padding:.5rem .85rem;font-size:.8rem;color:#15803d;align-items:center;gap:6px;">
+        <i class="ti ti-check" style="font-size:15px"></i> Mensagem copiada! Agora abra o grupo e cole.
+      </div>
+    </div>
+
+    <button class="btn-wpp" style="background:#075e54;" onclick="abrirGrupo()">
+      <i class="ti ti-users" style="font-size:20px"></i>
+      ABRIR GRUPO DO WHATSAPP
+    </button>
+    <div class="info-txt" style="margin-top:6px">Cole a mensagem no grupo após abrir</div>
+
+    <div style="margin-top:1rem;border-top:1px solid var(--cinza-borda);padding-top:1rem;">
     <button class="btn-wpp" onclick="enviarComprovante()">
       <i class="ti ti-brand-whatsapp" style="font-size:20px"></i>
-      ENVIAR COMPROVANTE NO WHATSAPP
+      ENVIAR COMPROVANTE (14) 99714-5171
     </button>
     <div class="info-txt" style="margin-top:6px">Abre o WhatsApp com a mensagem pronta — só anexe o comprovante</div>
+    </div>
+
     <div class="info-txt" style="margin-top:10px">✅ Confirmação em até 1 hora após o recebimento.</div>
 
     <!-- CONSULTA STATUS -->
@@ -454,7 +482,37 @@ function copiarPix() {
   setTimeout(()=>btn.innerHTML=orig,2200);
 }
 
-function copiarCodigos() {
+function montarMensagemGrupo() {
+  const nome  = document.getElementById('nome').value.trim();
+  const whats = document.getElementById('whats').value.trim();
+  const qtd   = codigosGerados.length;
+  const total = (qtd * PRECO_UNITARIO).toFixed(2).replace('.', ',');
+  const linhas = carrinho.map(item => {
+    const j = JOGOS[item.jogoIdx];
+    return `🎫 *${item.codigo}* · ${j.nome1} × ${j.nome2}: *${item.g1} × ${item.g2}*`;
+  }).join('\n');
+  return `🇧🇷 *BOLÃO COPA 2026 — Palpites*\n\n` +
+    `👤 Nome: ${nome}\n📱 WhatsApp: ${whats}\n\n` +
+    `*Palpites (${qtd}):*\n${linhas}\n\n` +
+    `💰 Total: R$ ${total} (${qtd} × R$ 5,00)`;
+}
+
+function copiarMensagemGrupo() {
+  const txt = montarMensagemGrupo();
+  navigator.clipboard.writeText(txt).catch(() => {});
+  const aviso = document.getElementById('msg-copiada');
+  aviso.style.display = 'flex';
+  const btn = document.getElementById('btn-copiar-msg');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<i class="ti ti-check" style="font-size:16px"></i> COPIADO!';
+  setTimeout(() => { btn.innerHTML = orig; }, 2500);
+}
+
+function abrirGrupo() {
+  window.open(WHATSAPP_GRUPO, '_blank');
+}
+
+
   const txt = codigosGerados.join(' | ');
   navigator.clipboard.writeText(txt).catch(()=>{});
   const btn=document.querySelector('.btn-copiar-codigo'), orig=btn.innerHTML;
@@ -552,8 +610,12 @@ function mostrarSucesso(nome) {
     <div class="resumo-item"><span class="resumo-lbl">Pagamento</span><span class="resumo-val" style="color:#dc7c00">⏳ Aguardando comprovante</span></div>
   `;
 
+  // Preenche preview da mensagem do grupo
+  document.getElementById('msg-preview-txt').textContent = montarMensagemGrupo();
+  document.getElementById('msg-copiada').style.display = 'none';
+
   // Preenche o campo de consulta com o primeiro código
-  if (codigosGerados.length>0) document.getElementById('status-codigo').value=codigosGerados[0];
+  if (codigosGerados.length > 0) document.getElementById('status-codigo').value = codigosGerados[0];
 
   const tela=document.getElementById('tela-sucesso');
   tela.style.display='block';
