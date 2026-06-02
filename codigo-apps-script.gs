@@ -68,6 +68,7 @@ function doGet(e) {
   if (action === 'palpite')    return salvarPalpite(e.parameter);
   if (action === 'dashboard')  return getDashboard();
   if (action === 'palpites')   return getPalpites();
+  if (action === 'ver')        return getPaginaPalpites();
 
   return resposta({ status: 'online', bolao: 'Copa 2026' });
 }
@@ -257,7 +258,50 @@ function getPalpitesDados(ss) {
   return resultado;
 }
 
-// ── POST (legado) ─────────────────────────────────────────────
+// ── Página HTML com palpites (sem CORS) ───────────────────────
+function getPaginaPalpites() {
+  var ss   = SpreadsheetApp.openById(SHEET_ID);
+  var data = getPalpitesDados(ss);
+
+  var abas = data.map(function(jogo, i) {
+    return '<button class="tab' + (i===0?' ativo':'') + '" onclick="trocar(' + i + ')">' + jogo.jogo + '</button>';
+  }).join('');
+
+  var conteudos = data.map(function(jogo, i) {
+    var lista = jogo.itens.length === 0
+      ? '<div class="vazio">Nenhum palpite ainda.</div>'
+      : jogo.itens.map(function(p, n) {
+          return '<div class="linha"><span class="nome">' + (n+1) + '. ' + p.nome + '</span><span class="placar">' + p.g1 + ' × ' + p.g2 + '</span></div>';
+        }).join('');
+    return '<div class="conteudo" id="c' + i + '" style="display:' + (i===0?'block':'none') + '">' + lista + '</div>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Palpites do Grupo</title>' +
+    '<style>' +
+    '*{box-sizing:border-box;margin:0;padding:0}' +
+    'body{font-family:Arial,sans-serif;background:#f5f6fa;padding:1rem}' +
+    'h2{font-size:1.2rem;color:#002776;margin-bottom:1rem;display:flex;align-items:center;gap:8px}' +
+    '.tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}' +
+    '.tab{padding:6px 12px;border:none;border-radius:8px;background:#e0e3ee;color:#6b7280;font-size:.82rem;font-weight:600;cursor:pointer}' +
+    '.tab.ativo{background:#002776;color:white}' +
+    '.linha{display:flex;justify-content:space-between;align-items:center;background:white;border-radius:8px;padding:.6rem .85rem;margin-bottom:6px;font-size:.88rem}' +
+    '.nome{font-weight:600;color:#1a1a2e}' +
+    '.placar{font-family:monospace;font-size:1rem;font-weight:700;color:#002776;background:#f0f4ff;border-radius:6px;padding:2px 10px}' +
+    '.vazio{text-align:center;color:#6b7280;padding:2rem;font-size:.85rem}' +
+    '</style></head><body>' +
+    '<h2>⚽ Palpites do Grupo</h2>' +
+    '<div class="tabs">' + abas + '</div>' +
+    conteudos +
+    '<script>function trocar(i){' +
+    'document.querySelectorAll(".tab").forEach(function(t,j){t.classList.toggle("ativo",j===i)});' +
+    'document.querySelectorAll(".conteudo").forEach(function(c,j){c.style.display=j===i?"block":"none"});' +
+    '}</scr'+'ipt></body></html>';
+
+  return HtmlService.createHtmlOutput(html)
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
 function doPost(e) {
   try {
     var dados = JSON.parse(e.postData.contents);
