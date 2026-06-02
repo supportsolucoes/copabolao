@@ -773,7 +773,6 @@ async function abrirPalpites() {
   document.getElementById('modal-overlay').classList.add('ativo');
 
   if (dadosPalpites.length > 0) {
-    // Já tem dados carregados do dashboard
     renderModalTabs();
     renderModalPalpites(0);
     return;
@@ -787,15 +786,25 @@ async function abrirPalpites() {
   document.getElementById('modal-tabs').innerHTML = '';
 
   try {
-    const resp = await fetch(APPS_SCRIPT_URL + '?action=dashboard');
-    const data = await resp.json();
-    if (!data.sucesso) throw new Error(data.erro);
+    const url = APPS_SCRIPT_URL + '?action=dashboard';
+    const resp = await fetch(url, { redirect: 'follow' });
+    const text = await resp.text();
+    const data = JSON.parse(text);
+    if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido');
     dadosPalpites = data.palpites || [];
+
+    // Atualiza prêmio também
+    if (data.totalPremio) {
+      const p = parseFloat(data.totalPremio);
+      document.getElementById('premio-val').textContent = 'R$ ' + p.toFixed(2).replace('.', ',');
+      document.getElementById('premio-sub').textContent = data.totalPalpites + ' palpite' + (data.totalPalpites !== 1 ? 's' : '') + ' registrado' + (data.totalPalpites !== 1 ? 's' : '');
+    }
+
     renderModalTabs();
     renderModalPalpites(0);
   } catch(err) {
     document.getElementById('modal-conteudo').innerHTML =
-      '<div class="modal-vazio">❌ Erro ao carregar. Tente novamente.</div>';
+      `<div class="modal-vazio">❌ Erro: ${err.message}<br><small>Verifique se o Apps Script foi reimplantado.</small></div>`;
   }
 }
 
