@@ -309,37 +309,34 @@
   <div class="success-screen" id="tela-sucesso">
     <div class="success-icon"><i class="ti ti-circle-check-filled"></i></div>
     <div class="success-title">Palpites Registrados! 🇧🇷</div>
-    <div class="success-sub">Agora envie o comprovante no grupo do WhatsApp para confirmar sua participação.</div>
+    <div class="success-sub">Agora siga os 2 passos abaixo para confirmar sua participação.</div>
 
     <div class="resumo-box" id="resumo-box"></div>
 
-    <!-- INSTRUÇÕES PASSO A PASSO -->
-    <div class="envio-steps">
-      <div class="envio-step">
-        <div class="envio-step-num">1</div>
-        <div class="envio-step-txt">Clique no botão abaixo — a mensagem com seus códigos será <strong>copiada automaticamente</strong></div>
-      </div>
-      <div class="envio-step">
-        <div class="envio-step-num">2</div>
-        <div class="envio-step-txt">O grupo do WhatsApp vai abrir — <strong>cole a mensagem</strong> (segure o campo de texto → Colar)</div>
-      </div>
-      <div class="envio-step">
-        <div class="envio-step-num">3</div>
-        <div class="envio-step-txt"><strong>Anexe o comprovante</strong> de pagamento e envie tudo junto</div>
-      </div>
+    <!-- PASSO 1: GRUPO -->
+    <div class="envio-step" style="margin-bottom:.6rem;">
+      <div class="envio-step-num">1</div>
+      <div class="envio-step-txt">Envie seus <strong>palpites no grupo</strong> — a mensagem será copiada, é só colar</div>
+    </div>
+    <button class="btn-wpp" onclick="enviarPalpiteGrupo()" style="background:#075e54;margin-bottom:.25rem;">
+      <i class="ti ti-users" style="font-size:20px"></i>
+      ENVIAR PALPITE NO GRUPO
+    </button>
+    <div id="copiado-aviso" style="display:none;margin-bottom:.75rem;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius);padding:.5rem .85rem;font-size:.8rem;color:#15803d;align-items:center;gap:6px;">
+      <i class="ti ti-check" style="font-size:15px"></i> Mensagem copiada! Abra o grupo e cole.
     </div>
 
-    <button class="btn-wpp btn-wpp-grande" onclick="enviarWhatsAppFinal()" id="btn-wpp-final">
-      <i class="ti ti-brand-whatsapp" style="font-size:22px"></i>
-      ABRIR GRUPO E ENVIAR
+    <!-- PASSO 2: COMPROVANTE NO NÚMERO FIXO -->
+    <div class="envio-step" style="margin-bottom:.6rem;margin-top:.5rem;">
+      <div class="envio-step-num">2</div>
+      <div class="envio-step-txt">Envie o <strong>comprovante de pagamento</strong> direto no WhatsApp — a mensagem já vem pronta, só anexe o comprovante</div>
+    </div>
+    <button class="btn-wpp" onclick="enviarComprovante()">
+      <i class="ti ti-brand-whatsapp" style="font-size:20px"></i>
+      ENVIAR COMPROVANTE
     </button>
 
-    <div id="copiado-aviso" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius);padding:.6rem 1rem;font-size:.82rem;color:#15803d;align-items:center;gap:6px;">
-      <i class="ti ti-check" style="font-size:16px"></i>
-      Mensagem copiada! Agora cole no grupo e anexe o comprovante.
-    </div>
-
-    <div class="info-txt" style="margin-top:10px">Confirmação em até 1 hora após o envio.</div>
+    <div class="info-txt" style="margin-top:12px">✅ Confirmação em até 1 hora após o recebimento do comprovante.</div>
 
     <!-- CONSULTA DE STATUS -->
     <div class="status-box" id="status-box">
@@ -366,6 +363,7 @@
 const APPS_SCRIPT_URL = 'COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT';
 const WHATSAPP_NUM    = null; // usando link de grupo
 const WHATSAPP_GRUPO  = 'https://chat.whatsapp.com/KKnNgEGZSiG6qMCNhlAqhX';
+const WHATSAPP_COMP   = '5514997145171'; // número fixo para comprovantes
 const PIX_CHAVE       = '(11) 99999-9999';
 const PRECO_UNITARIO  = 5.00;
 
@@ -550,40 +548,52 @@ function copiarPix() {
   setTimeout(() => btn.innerHTML = orig, 2200);
 }
 
-// ── Mensagem WhatsApp ─────────────────────────────────────────
-function montarMensagem() {
+// ── Mensagens WhatsApp ────────────────────────────────────────
+function montarMensagemPalpite() {
   const nome  = document.getElementById('nome').value.trim();
   const whats = document.getElementById('whats').value.trim();
   const qtd   = carrinho.length;
   const total = (qtd * PRECO_UNITARIO).toFixed(2).replace('.', ',');
-
-  const linhasPalpites = carrinho.map(item => {
+  const linhas = carrinho.map(item => {
     const j = JOGOS[item.jogoIdx];
     return `🎫 *${item.codigo}* · ${j.nome1} × ${j.nome2}: *${item.g1} × ${item.g2}*`;
   }).join('\n');
-
   return encodeURIComponent(
-    `🇧🇷 *BOLÃO COPA 2026*\n\n` +
-    `👤 Nome: ${nome}\n` +
-    `📱 WhatsApp: ${whats}\n\n` +
-    `*Meus palpites (${qtd}):*\n${linhasPalpites}\n\n` +
-    `💰 *Total: R$ ${total}*\n` +
-    `(${qtd} palpite${qtd > 1 ? 's' : ''} × R$ 5,00)\n\n` +
-    `Segue comprovante de pagamento.\n✅ Aguardo confirmação!`
+    `🇧🇷 *BOLÃO COPA 2026 — Palpites*\n\n` +
+    `👤 Nome: ${nome}\n📱 WhatsApp: ${whats}\n\n` +
+    `*Palpites (${qtd}):*\n${linhas}\n\n` +
+    `💰 Total: R$ ${total} (${qtd} × R$ 5,00)`
   );
 }
 
-function abrirGrupo() {
-  const texto = decodeURIComponent(montarMensagem());
+function montarMensagemComprovante() {
+  const nome   = document.getElementById('nome').value.trim();
+  const qtd    = carrinho.length;
+  const total  = (qtd * PRECO_UNITARIO).toFixed(2).replace('.', ',');
+  const codigos = carrinho.map(i => `*${i.codigo}*`).join(', ');
+  return encodeURIComponent(
+    `🇧🇷 *BOLÃO COPA 2026 — Comprovante*\n\n` +
+    `👤 Nome: ${nome}\n` +
+    `🎫 Código(s): ${codigos}\n` +
+    `💰 Valor: *R$ ${total}* (${qtd} palpite${qtd > 1 ? 's' : ''} × R$ 5,00)\n\n` +
+    `Segue o comprovante de pagamento. ✅`
+  );
+}
+
+function enviarPalpiteGrupo() {
+  const texto = decodeURIComponent(montarMensagemPalpite());
   navigator.clipboard.writeText(texto).catch(() => {});
-  // Mostra aviso de copiado
   const aviso = document.getElementById('copiado-aviso');
-  if (aviso) { aviso.style.display = 'flex'; }
+  if (aviso) aviso.style.display = 'flex';
   setTimeout(() => window.open(WHATSAPP_GRUPO, '_blank'), 400);
 }
 
-function enviarWhatsApp()      { abrirGrupo(); }
-function enviarWhatsAppFinal() { abrirGrupo(); }
+function enviarComprovante() {
+  window.open(`https://wa.me/${WHATSAPP_COMP}?text=${montarMensagemComprovante()}`, '_blank');
+}
+
+function enviarWhatsApp()      { enviarPalpiteGrupo(); }
+function enviarWhatsAppFinal() { enviarPalpiteGrupo(); }
 
 // ── Validação ─────────────────────────────────────────────────
 function validar() {
