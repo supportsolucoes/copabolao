@@ -110,13 +110,29 @@ function doGet(e) {
 
   if (action === 'status') {
     var codigo = e.parameter.codigo || '';
-    // Retorna HTML que faz postMessage de volta ao pai (contorna CORS)
-    var dados = consultarStatusDados(codigo);
-    var json  = JSON.stringify(dados);
-    var html  = '<!DOCTYPE html><html><body><script>' +
-      'window.onload=function(){' +
-      'window.parent.postMessage(' + json + ',"*");' +
-      '}</s'+'cript></body></html>';
+    var dados  = consultarStatusDados(codigo);
+    var html;
+
+    if (!dados.encontrado) {
+      html = paginaStatus('❌ Código não encontrado',
+        'O código <strong>' + codigo + '</strong> não foi encontrado.<br>Verifique se digitou corretamente.',
+        '#fef2f2', '#dc2626');
+    } else if (dados.confirmado) {
+      html = paginaStatus('✅ Pagamento Confirmado!',
+        'Participante: <strong>' + dados.nome + '</strong><br>' +
+        'Jogo: <strong>' + dados.jogo + '</strong><br>' +
+        'Palpite: <strong>' + dados.gol1 + ' × ' + dados.gol2 + '</strong><br>' +
+        'Código: <strong>' + dados.codigo + '</strong>',
+        '#f0fdf4', '#15803d');
+    } else {
+      html = paginaStatus('⏳ Aguardando Confirmação',
+        'Participante: <strong>' + dados.nome + '</strong><br>' +
+        'Jogo: <strong>' + dados.jogo + '</strong><br>' +
+        'Palpite: <strong>' + dados.gol1 + ' × ' + dados.gol2 + '</strong><br>' +
+        'Código: <strong>' + dados.codigo + '</strong><br><br>' +
+        'Seu comprovante ainda não foi confirmado.<br>Aguarde até 1 hora após o envio.',
+        '#fff8e1', '#7a5800');
+    }
     return HtmlService.createHtmlOutput(html)
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
@@ -280,6 +296,28 @@ function onEdit(e) {
   } catch (err) {
     console.error('Erro no onEdit: ' + err.message);
   }
+}
+
+// ── Gera página HTML de status ───────────────────────────────
+function paginaStatus(titulo, corpo, bgColor, textColor) {
+  return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Bolão Copa 2026 — Status</title>' +
+    '<style>*{box-sizing:border-box;margin:0;padding:0}' +
+    'body{font-family:Arial,sans-serif;background:#f5f6fa;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}' +
+    '.card{background:#fff;border-radius:16px;padding:2rem;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1)}' +
+    '.badge{background:' + bgColor + ';color:' + textColor + ';border-radius:12px;padding:1.2rem;margin-bottom:1.2rem}' +
+    '.titulo{font-size:1.4rem;font-weight:700;margin-bottom:.75rem;color:' + textColor + '}' +
+    '.corpo{font-size:.95rem;line-height:1.7;color:#374151}' +
+    '.btn{display:inline-block;margin-top:1.5rem;background:#002776;color:#fff;border:none;border-radius:10px;padding:.75rem 1.5rem;font-size:1rem;font-weight:600;cursor:pointer;text-decoration:none}' +
+    '.logo{font-size:2rem;margin-bottom:.5rem}' +
+    '</style></head><body>' +
+    '<div class="card">' +
+    '<div class="logo">⚽🇧🇷</div>' +
+    '<div style="font-family:Arial;font-size:1.1rem;font-weight:700;color:#002776;letter-spacing:1px;margin-bottom:1rem">BOLÃO COPA 2026</div>' +
+    '<div class="badge"><div class="titulo">' + titulo + '</div><div class="corpo">' + corpo + '</div></div>' +
+    '<a class="btn" href="javascript:window.close()">Fechar</a>' +
+    '</div></body></html>';
 }
 
 // ── Helpers ──────────────────────────────────────────────────

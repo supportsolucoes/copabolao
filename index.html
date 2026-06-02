@@ -626,10 +626,9 @@ function mostrarSucesso(nome) {
   tela.scrollIntoView({behavior:'smooth'});
 }
 
-async function consultarStatus() {
+function consultarStatus() {
   const codigo = document.getElementById('status-codigo').value.trim().toUpperCase();
   const resultado = document.getElementById('status-resultado');
-  const btn = document.getElementById('btn-status-txt');
 
   if (!codigo || codigo.length < 6) {
     resultado.className = 'nao-encontrado';
@@ -637,56 +636,12 @@ async function consultarStatus() {
     return;
   }
 
-  btn.textContent = 'Consultando...';
-  document.querySelector('.btn-status-check').disabled = true;
-  resultado.className = '';
-  resultado.style.display = 'none';
+  // Abre a página de status no Apps Script em nova aba — sem CORS
+  const url = `${APPS_SCRIPT_URL}?action=status&codigo=${encodeURIComponent(codigo)}`;
+  window.open(url, '_blank');
 
-  try {
-    const data = await new Promise((resolve, reject) => {
-      // Cria iframe invisível apontando para o Apps Script
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = `${APPS_SCRIPT_URL}?action=status&codigo=${encodeURIComponent(codigo)}`;
-      document.body.appendChild(iframe);
-
-      // Ouve a resposta via postMessage
-      const handler = (event) => {
-        if (event.data && event.data.sucesso !== undefined) {
-          window.removeEventListener('message', handler);
-          document.body.removeChild(iframe);
-          resolve(event.data);
-        }
-      };
-      window.addEventListener('message', handler);
-
-      // Timeout de 8 segundos
-      setTimeout(() => {
-        window.removeEventListener('message', handler);
-        if (document.body.contains(iframe)) document.body.removeChild(iframe);
-        reject(new Error('Timeout'));
-      }, 8000);
-    });
-
-    if (!data.encontrado) {
-      resultado.className = 'nao-encontrado';
-      resultado.innerHTML = `❌ Código <strong>${codigo}</strong> não encontrado. Verifique se digitou corretamente.`;
-    } else if (data.confirmado) {
-      resultado.className = 'confirmado';
-      resultado.innerHTML = `✅ <strong>Pagamento confirmado!</strong><br>Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}`;
-    } else {
-      resultado.className = 'aguardando';
-      resultado.innerHTML = `⏳ <strong>Aguardando confirmação do comprovante.</strong><br>
-        Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}<br>
-        <small>Se já enviou, aguarde até 1 hora.</small>`;
-    }
-  } catch (err) {
-    resultado.className = 'nao-encontrado';
-    resultado.innerHTML = '❌ Erro ao consultar. Tente novamente em instantes.';
-  } finally {
-    btn.textContent = 'Consultar';
-    document.querySelector('.btn-status-check').disabled = false;
-  }
+  resultado.className = 'aguardando';
+  resultado.innerHTML = `🔍 Consultando código <strong>${codigo}</strong>... A resposta abrirá em uma nova aba.`;
 }
 
 document.getElementById('pix-key-display').textContent=PIX_CHAVE;
