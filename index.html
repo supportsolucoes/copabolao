@@ -513,6 +513,7 @@ function abrirGrupo() {
 }
 
 
+function copiarCodigos() {
   const txt = codigosGerados.join(' | ');
   navigator.clipboard.writeText(txt).catch(()=>{});
   const btn=document.querySelector('.btn-copiar-codigo'), orig=btn.innerHTML;
