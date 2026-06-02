@@ -643,15 +643,29 @@ async function consultarStatus() {
   resultado.style.display = 'none';
 
   try {
-    // Usa script tag (JSONP-like) para contornar CORS do Apps Script
     const data = await new Promise((resolve, reject) => {
-      const cbName = 'cb_' + Date.now();
-      const script = document.createElement('script');
-      window[cbName] = (d) => { resolve(d); delete window[cbName]; document.body.removeChild(script); };
-      script.onerror = () => reject(new Error('Erro de rede'));
-      script.src = `${APPS_SCRIPT_URL}?action=status&codigo=${encodeURIComponent(codigo)}&callback=${cbName}`;
-      document.body.appendChild(script);
-      setTimeout(() => reject(new Error('Timeout')), 8000);
+      // Cria iframe invisível apontando para o Apps Script
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = `${APPS_SCRIPT_URL}?action=status&codigo=${encodeURIComponent(codigo)}`;
+      document.body.appendChild(iframe);
+
+      // Ouve a resposta via postMessage
+      const handler = (event) => {
+        if (event.data && event.data.sucesso !== undefined) {
+          window.removeEventListener('message', handler);
+          document.body.removeChild(iframe);
+          resolve(event.data);
+        }
+      };
+      window.addEventListener('message', handler);
+
+      // Timeout de 8 segundos
+      setTimeout(() => {
+        window.removeEventListener('message', handler);
+        if (document.body.contains(iframe)) document.body.removeChild(iframe);
+        reject(new Error('Timeout'));
+      }, 8000);
     });
 
     if (!data.encontrado) {
@@ -662,7 +676,9 @@ async function consultarStatus() {
       resultado.innerHTML = `✅ <strong>Pagamento confirmado!</strong><br>Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}`;
     } else {
       resultado.className = 'aguardando';
-      resultado.innerHTML = `⏳ <strong>Aguardando confirmação do comprovante.</strong><br>Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}<br><small>Se já enviou, aguarde até 1 hora.</small>`;
+      resultado.innerHTML = `⏳ <strong>Aguardando confirmação do comprovante.</strong><br>
+        Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}<br>
+        <small>Se já enviou, aguarde até 1 hora.</small>`;
     }
   } catch (err) {
     resultado.className = 'nao-encontrado';

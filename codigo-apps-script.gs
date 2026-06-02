@@ -102,24 +102,58 @@ function doGet(e) {
   var action   = (e.parameter.action || '').toLowerCase();
   var callback = e.parameter.callback || '';
 
-  var result;
   if (action === 'palpite') {
-    result = salvarPalpite(e.parameter);
-  } else if (action === 'status') {
-    result = consultarStatus(e.parameter.codigo || '');
-  } else {
-    result = resposta({ status: 'online', bolao: 'Copa 2026' });
+    var r = salvarPalpite(e.parameter);
+    if (callback) return jsonp(callback, r);
+    return r;
   }
 
-  // Suporte a JSONP (contorna CORS)
-  if (callback) {
-    var json = result.getContent();
-    return ContentService
-      .createTextOutput(callback + '(' + json + ')')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  if (action === 'status') {
+    var codigo = e.parameter.codigo || '';
+    // Retorna HTML que faz postMessage de volta ao pai (contorna CORS)
+    var dados = consultarStatusDados(codigo);
+    var json  = JSON.stringify(dados);
+    var html  = '<!DOCTYPE html><html><body><script>' +
+      'window.onload=function(){' +
+      'window.parent.postMessage(' + json + ',"*");' +
+      '}</s'+'cript></body></html>';
+    return HtmlService.createHtmlOutput(html)
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   }
 
-  return result;
+  return resposta({ status: 'online', bolao: 'Copa 2026' });
+}
+
+function jsonp(callback, result) {
+  return ContentService
+    .createTextOutput(callback + '(' + result.getContent() + ')')
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+// ── Retorna dados de status como objeto JS ───────────────────
+function consultarStatusDados(codigo) {
+  codigo = (codigo || '').trim().toUpperCase();
+  if (!codigo) return { sucesso: false, encontrado: false };
+
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  for (var i = 0; i < JOGOS.length; i++) {
+    var jogo = JOGOS[i];
+    var aba  = ss.getSheetByName(jogo.aba);
+    if (!aba || aba.getLastRow() < 2) continue;
+    var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 12).getValues();
+    for (var r = 0; r < dados.length; r++) {
+      var linha = dados[r];
+      if ((linha[0] || '').toString().trim().toUpperCase() === codigo) {
+        var confirmado = (linha[10] || '').toString().toLowerCase() === 'sim';
+        return {
+          sucesso: true, encontrado: true, confirmado: confirmado,
+          codigo: linha[0], jogo: jogo.nome,
+          nome: linha[2], gol1: linha[5], gol2: linha[6]
+        };
+      }
+    }
+  }
+  return { sucesso: true, encontrado: false };
 }
 
 // ── Salva palpite recebido via GET params ────────────────────
