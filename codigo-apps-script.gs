@@ -65,8 +65,9 @@ function inicializarPlanilha() {
 function doGet(e) {
   var action = (e.parameter.action || '').toLowerCase();
 
-  if (action === 'palpite')   return salvarPalpite(e.parameter);
-  if (action === 'dashboard') return getDashboard();
+  if (action === 'palpite')    return salvarPalpite(e.parameter);
+  if (action === 'dashboard')  return getDashboard();
+  if (action === 'palpites')   return getPalpites();
 
   return resposta({ status: 'online', bolao: 'Copa 2026' });
 }
@@ -218,6 +219,38 @@ function getDashboard() {
       ranking:       ranking
     });
 
+  } catch(err) {
+    return falha(err.message);
+  }
+}
+
+// ── Retorna palpites públicos (só nome e placar) ──────────────
+function getPalpites() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var resultado = [];
+
+    for (var i = 0; i < JOGOS.length; i++) {
+      var jogo = JOGOS[i];
+      var aba  = ss.getSheetByName(jogo.aba);
+      var itens = [];
+
+      if (aba && aba.getLastRow() > 1) {
+        var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 7).getValues();
+        for (var r = 0; r < dados.length; r++) {
+          var nome = (dados[r][2] || '').toString().trim();
+          var g1   = dados[r][5];
+          var g2   = dados[r][6];
+          if (nome && g1 !== '' && g2 !== '') {
+            itens.push({ nome: nome, g1: g1, g2: g2 });
+          }
+        }
+      }
+
+      resultado.push({ jogo: jogo.nome, itens: itens });
+    }
+
+    return resposta({ palpites: resultado });
   } catch(err) {
     return falha(err.message);
   }
