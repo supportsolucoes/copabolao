@@ -81,13 +81,60 @@ function doPost(e) {
   }
 }
 
-// ── Recebe GET (consulta de status) ─────────────────────────
+// ── Recebe GET (palpite, status ou ping) ─────────────────────
 function doGet(e) {
   var action = (e.parameter.action || '').toLowerCase();
+
+  if (action === 'palpite') {
+    return salvarPalpite(e.parameter);
+  }
+
   if (action === 'status') {
     return consultarStatus(e.parameter.codigo || '');
   }
+
   return resposta({ status: 'online', bolao: 'Copa 2026' });
+}
+
+// ── Salva palpite recebido via GET params ────────────────────
+function salvarPalpite(p) {
+  try {
+    var ss      = SpreadsheetApp.openById(SHEET_ID);
+    var jogoIdx = parseInt(p.jogoIndex);
+    var jogo    = JOGOS[jogoIdx];
+    if (!jogo) throw new Error('Jogo invalido: ' + jogoIdx);
+
+    var aba = ss.getSheetByName(jogo.aba);
+    if (!aba) {
+      aba = ss.insertSheet(jogo.aba);
+      aba.getRange(1, 1, 1, CABECALHO.length).setValues([CABECALHO]);
+    }
+
+    var agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
+    var linha = [
+      p.codigo        || '',
+      agora,
+      p.nome          || '',
+      p.whatsapp      || '',
+      p.email         || '',
+      p.gol1          || '',
+      p.gol2          || '',
+      p.totalPalpites || 1,
+      p.totalValor    || PRECO_UNIT,
+      'Pendente',
+      'Nao',
+      ''
+    ];
+
+    aba.appendRow(linha);
+    var ul = aba.getLastRow();
+    aba.getRange(ul, 1, 1, CABECALHO.length)
+       .setBackground(ul % 2 === 0 ? '#f0f4ff' : '#ffffff');
+
+    return resposta({ mensagem: 'Palpite registrado!' });
+  } catch (err) {
+    return falha(err.message);
+  }
 }
 
 // ── Consulta status por codigo ───────────────────────────────

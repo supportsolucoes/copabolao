@@ -630,31 +630,73 @@ async function confirmar() {
   document.getElementById('overlay').classList.add('ativo');
   document.getElementById('btn-confirmar').disabled = true;
 
-  // Envia cada palpite como uma linha separada no Sheets
   try {
     for (const item of carrinho) {
       const payload = {
-        jogoIndex: item.jogoIdx,
-        codigo: item.codigo,
-        nome, whatsapp: whats, email,
-        gol1: item.g1, gol2: item.g2,
+        jogoIndex:     item.jogoIdx,
+        codigo:        item.codigo,
+        nome:          nome,
+        whatsapp:      whats,
+        email:         email,
+        gol1:          item.g1,
+        gol2:          item.g2,
         totalPalpites: carrinho.length,
-        totalValor: (carrinho.length * PRECO_UNITARIO).toFixed(2),
+        totalValor:    (carrinho.length * PRECO_UNITARIO).toFixed(2),
       };
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+
+      // Apps Script com no-cors não recebe POST body — usamos iframe trick via form
+      await enviarViaForm(payload);
     }
     mostrarSucesso(nome);
   } catch (err) {
-    alert('❌ Erro ao registrar. Verifique a URL do Apps Script e tente novamente.');
+    alert('❌ Erro ao registrar. Tente novamente.');
     console.error(err);
   } finally {
     document.getElementById('overlay').classList.remove('ativo');
     document.getElementById('btn-confirmar').disabled = false;
   }
+}
+
+// Envia dados para o Apps Script usando um form invisível (contorna limitação CORS)
+function enviarViaForm(dados) {
+  return new Promise((resolve) => {
+    const iframe = document.createElement('iframe');
+    iframe.name = 'hidden_iframe_' + Date.now();
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = APPS_SCRIPT_URL;
+    form.target = iframe.name;
+    form.style.display = 'none';
+
+    // Envia o JSON como campo oculto — o Apps Script lê via e.postData.contents
+    // Como form não suporta isso, usamos GET com parâmetros
+    form.method = 'GET';
+    form.action = APPS_SCRIPT_URL + '?action=palpite' +
+      '&jogoIndex='     + encodeURIComponent(dados.jogoIndex) +
+      '&codigo='        + encodeURIComponent(dados.codigo) +
+      '&nome='          + encodeURIComponent(dados.nome) +
+      '&whatsapp='      + encodeURIComponent(dados.whatsapp) +
+      '&email='         + encodeURIComponent(dados.email) +
+      '&gol1='          + encodeURIComponent(dados.gol1) +
+      '&gol2='          + encodeURIComponent(dados.gol2) +
+      '&totalPalpites=' + encodeURIComponent(dados.totalPalpites) +
+      '&totalValor='    + encodeURIComponent(dados.totalValor);
+
+    document.body.appendChild(form);
+    iframe.onload = () => {
+      setTimeout(() => {
+        document.body.removeChild(form);
+        document.body.removeChild(iframe);
+        resolve();
+      }, 300);
+    };
+    form.submit();
+    // Resolve após 3s se o iframe não disparar onload
+    setTimeout(resolve, 3000);
+  });
 }
 
 function mostrarSucesso(nome) {
