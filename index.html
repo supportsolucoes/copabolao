@@ -730,6 +730,9 @@ async function carregarDashboard() {
     document.getElementById('premio-sub').textContent =
       data.totalPalpites + ' palpite' + (data.totalPalpites !== 1 ? 's' : '') + ' registrado' + (data.totalPalpites !== 1 ? 's' : '');
 
+    // Cache dos palpites para o modal
+    if (data.palpites) dadosPalpites = data.palpites;
+
     // Ranking
     if (data.ranking && data.ranking.length > 0) {
       const card = document.getElementById('ranking-card');
@@ -768,6 +771,14 @@ let dadosPalpites  = [];
 
 async function abrirPalpites() {
   document.getElementById('modal-overlay').classList.add('ativo');
+
+  if (dadosPalpites.length > 0) {
+    // Já tem dados carregados do dashboard
+    renderModalTabs();
+    renderModalPalpites(0);
+    return;
+  }
+
   document.getElementById('modal-conteudo').innerHTML = `
     <div style="text-align:center;padding:2rem;color:var(--texto-sec)">
       <div class="spinner" style="border-top-color:var(--verde);margin:0 auto 1rem"></div>
@@ -776,10 +787,10 @@ async function abrirPalpites() {
   document.getElementById('modal-tabs').innerHTML = '';
 
   try {
-    const resp = await fetch(APPS_SCRIPT_URL + '?action=palpites');
+    const resp = await fetch(APPS_SCRIPT_URL + '?action=dashboard');
     const data = await resp.json();
     if (!data.sucesso) throw new Error(data.erro);
-    dadosPalpites = data.palpites;
+    dadosPalpites = data.palpites || [];
     renderModalTabs();
     renderModalPalpites(0);
   } catch(err) {
