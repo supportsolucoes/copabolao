@@ -99,17 +99,27 @@ function doPost(e) {
 
 // ── Recebe GET (palpite, status ou ping) ─────────────────────
 function doGet(e) {
-  var action = (e.parameter.action || '').toLowerCase();
+  var action   = (e.parameter.action || '').toLowerCase();
+  var callback = e.parameter.callback || '';
 
+  var result;
   if (action === 'palpite') {
-    return salvarPalpite(e.parameter);
+    result = salvarPalpite(e.parameter);
+  } else if (action === 'status') {
+    result = consultarStatus(e.parameter.codigo || '');
+  } else {
+    result = resposta({ status: 'online', bolao: 'Copa 2026' });
   }
 
-  if (action === 'status') {
-    return consultarStatus(e.parameter.codigo || '');
+  // Suporte a JSONP (contorna CORS)
+  if (callback) {
+    var json = result.getContent();
+    return ContentService
+      .createTextOutput(callback + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
   }
 
-  return resposta({ status: 'online', bolao: 'Copa 2026' });
+  return result;
 }
 
 // ── Salva palpite recebido via GET params ────────────────────

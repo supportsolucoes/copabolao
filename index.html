@@ -627,32 +627,49 @@ function mostrarSucesso(nome) {
 }
 
 async function consultarStatus() {
-  const codigo=document.getElementById('status-codigo').value.trim().toUpperCase();
-  const resultado=document.getElementById('status-resultado');
-  const btn=document.getElementById('btn-status-txt');
-  if (!codigo||codigo.length<6) { resultado.className='nao-encontrado'; resultado.innerHTML='⚠️ Digite um código válido (ex: J1-K7MN)'; return; }
-  btn.textContent='Consultando...';
-  document.querySelector('.btn-status-check').disabled=true;
-  resultado.className=''; resultado.style.display='none';
+  const codigo = document.getElementById('status-codigo').value.trim().toUpperCase();
+  const resultado = document.getElementById('status-resultado');
+  const btn = document.getElementById('btn-status-txt');
+
+  if (!codigo || codigo.length < 6) {
+    resultado.className = 'nao-encontrado';
+    resultado.innerHTML = '⚠️ Digite um código válido (ex: J1-K7MN)';
+    return;
+  }
+
+  btn.textContent = 'Consultando...';
+  document.querySelector('.btn-status-check').disabled = true;
+  resultado.className = '';
+  resultado.style.display = 'none';
+
   try {
-    const resp=await fetch(`${APPS_SCRIPT_URL}?action=status&codigo=${encodeURIComponent(codigo)}`);
-    const data=await resp.json();
+    // Usa script tag (JSONP-like) para contornar CORS do Apps Script
+    const data = await new Promise((resolve, reject) => {
+      const cbName = 'cb_' + Date.now();
+      const script = document.createElement('script');
+      window[cbName] = (d) => { resolve(d); delete window[cbName]; document.body.removeChild(script); };
+      script.onerror = () => reject(new Error('Erro de rede'));
+      script.src = `${APPS_SCRIPT_URL}?action=status&codigo=${encodeURIComponent(codigo)}&callback=${cbName}`;
+      document.body.appendChild(script);
+      setTimeout(() => reject(new Error('Timeout')), 8000);
+    });
+
     if (!data.encontrado) {
-      resultado.className='nao-encontrado';
-      resultado.innerHTML=`❌ Código <strong>${codigo}</strong> não encontrado.`;
+      resultado.className = 'nao-encontrado';
+      resultado.innerHTML = `❌ Código <strong>${codigo}</strong> não encontrado. Verifique se digitou corretamente.`;
     } else if (data.confirmado) {
-      resultado.className='confirmado';
-      resultado.innerHTML=`✅ <strong>Pagamento confirmado!</strong><br>Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}`;
+      resultado.className = 'confirmado';
+      resultado.innerHTML = `✅ <strong>Pagamento confirmado!</strong><br>Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}`;
     } else {
-      resultado.className='aguardando';
-      resultado.innerHTML=`⏳ <strong>Aguardando confirmação do comprovante.</strong><br>Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}<br><small>Se já enviou, aguarde até 1 hora.</small>`;
+      resultado.className = 'aguardando';
+      resultado.innerHTML = `⏳ <strong>Aguardando confirmação do comprovante.</strong><br>Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}<br><small>Se já enviou, aguarde até 1 hora.</small>`;
     }
-  } catch(err) {
-    resultado.className='nao-encontrado';
-    resultado.innerHTML='❌ Erro ao consultar. Tente novamente.';
+  } catch (err) {
+    resultado.className = 'nao-encontrado';
+    resultado.innerHTML = '❌ Erro ao consultar. Tente novamente em instantes.';
   } finally {
-    btn.textContent='Consultar';
-    document.querySelector('.btn-status-check').disabled=false;
+    btn.textContent = 'Consultar';
+    document.querySelector('.btn-status-check').disabled = false;
   }
 }
 
