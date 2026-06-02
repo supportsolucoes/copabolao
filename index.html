@@ -142,6 +142,34 @@
   .regras-lista li i { font-size:16px; flex-shrink:0; margin-top:2px; }
   .regras-lista li strong { color:#ffffff; font-weight:700; }
 
+  /* PREMIO ACUMULADO */
+  .premio-card { background:linear-gradient(135deg,#009c3b,#007a2f); border-radius:var(--radius-lg); padding:1.25rem 1.5rem; margin-bottom:1.25rem; text-align:center; position:relative; overflow:hidden; }
+  .premio-card::before { content:'🏆'; font-size:5rem; position:absolute; right:-10px; top:-10px; opacity:.15; }
+  .premio-lbl { font-size:.75rem; color:rgba(255,255,255,.8); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+  .premio-val { font-family:'Bebas Neue',sans-serif; font-size:3rem; color:var(--amarelo); letter-spacing:3px; line-height:1; }
+  .premio-sub { font-size:.75rem; color:rgba(255,255,255,.7); margin-top:4px; }
+
+  /* COUNTDOWN */
+  .countdown-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:1.25rem; display:flex; align-items:center; gap:12px; }
+  .countdown-icon { font-size:1.8rem; flex-shrink:0; }
+  .countdown-info { flex:1; }
+  .countdown-lbl { font-size:.72rem; color:var(--texto-sec); text-transform:uppercase; letter-spacing:.5px; }
+  .countdown-val { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; color:var(--azul); letter-spacing:2px; line-height:1.2; }
+  .countdown-jogo { font-size:.78rem; color:var(--texto-sec); margin-top:2px; }
+  .countdown-encerrado { color:#dc2626; }
+
+  /* RANKING */
+  .ranking-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:1.25rem; }
+  .ranking-title { font-family:'Bebas Neue',sans-serif; font-size:1.2rem; color:var(--azul); letter-spacing:1px; margin-bottom:1rem; display:flex; align-items:center; gap:8px; }
+  .ranking-jogo { margin-bottom:1rem; }
+  .ranking-jogo-header { background:var(--azul); color:white; border-radius:var(--radius); padding:.5rem .85rem; font-size:.8rem; font-weight:600; margin-bottom:.5rem; display:flex; justify-content:space-between; }
+  .ranking-resultado { font-family:'Bebas Neue',sans-serif; letter-spacing:1px; color:var(--amarelo); }
+  .ranking-item { display:flex; align-items:center; gap:8px; padding:.45rem .5rem; border-bottom:1px solid var(--cinza-borda); font-size:.83rem; }
+  .ranking-item:last-child { border-bottom:none; }
+  .ranking-pos { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--verde); width:20px; text-align:center; flex-shrink:0; }
+  .ranking-nome { flex:1; font-weight:500; color:var(--texto); }
+  .ranking-vazio { text-align:center; color:var(--texto-sec); font-size:.82rem; padding:.5rem; }
+
   /* OVERLAY */
   .overlay { display:none; position:fixed; inset:0; background:rgba(0,39,118,.55); z-index:999; align-items:center; justify-content:center; flex-direction:column; gap:1rem; }
   .overlay.ativo { display:flex; }
@@ -161,6 +189,29 @@
 
   <div class="price-banner">
     Entrada: <span>R$ 5,00</span> por palpite · Aposte quantas vezes quiser!
+  </div>
+
+  <!-- PRÊMIO ACUMULADO -->
+  <div class="premio-card">
+    <div class="premio-lbl">🏆 Prêmio acumulado</div>
+    <div class="premio-val" id="premio-val">R$ --</div>
+    <div class="premio-sub" id="premio-sub">carregando...</div>
+  </div>
+
+  <!-- CONTADOR REGRESSIVO -->
+  <div class="countdown-card">
+    <div class="countdown-icon">⏳</div>
+    <div class="countdown-info">
+      <div class="countdown-lbl">Apostas fecham em</div>
+      <div class="countdown-val" id="countdown-val">--:--:--</div>
+      <div class="countdown-jogo" id="countdown-jogo"></div>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="ranking-card" id="ranking-card" style="display:none">
+    <div class="ranking-title"><i class="ti ti-medal" style="font-size:20px;color:var(--verde)"></i>Ranking dos Acertadores</div>
+    <div id="ranking-conteudo"></div>
   </div>
 
   <div class="steps">
@@ -557,7 +608,113 @@ function mostrarSucesso(nome) {
   tela.scrollIntoView({ behavior:'smooth' });
 }
 
+// ── Countdown ─────────────────────────────────────────────────
+function iniciarCountdown() {
+  function tick() {
+    const agora = new Date();
+    let proximoJogo = null;
+
+    for (let i = 0; i < JOGOS.length; i++) {
+      const j = JOGOS[i];
+      if (agora >= j.abertura && agora <= j.fechamento) {
+        proximoJogo = { jogo: j, tipo: 'aberto' };
+        break;
+      }
+      if (agora < j.abertura) {
+        proximoJogo = { jogo: j, tipo: 'futuro' };
+        break;
+      }
+    }
+
+    const valEl  = document.getElementById('countdown-val');
+    const jogoEl = document.getElementById('countdown-jogo');
+
+    if (!proximoJogo) {
+      valEl.textContent = 'Encerrado';
+      valEl.classList.add('countdown-encerrado');
+      jogoEl.textContent = 'Apostas encerradas para todos os jogos';
+      return;
+    }
+
+    const j       = proximoJogo.jogo;
+    const alvo    = proximoJogo.tipo === 'aberto' ? j.fechamento : j.abertura;
+    const diff    = alvo - agora;
+    const label   = proximoJogo.tipo === 'aberto' ? 'Apostas fecham em' : 'Apostas abrem em';
+
+    document.querySelector('.countdown-lbl').textContent = label;
+    jogoEl.textContent = j.nome1 + ' × ' + j.nome2 + ' · ' + j.label.split('·')[1]?.trim();
+
+    if (diff <= 0) {
+      valEl.textContent = '00:00:00';
+      return;
+    }
+
+    const h  = Math.floor(diff / 3600000);
+    const m  = Math.floor((diff % 3600000) / 60000);
+    const s  = Math.floor((diff % 60000) / 1000);
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    const ss = String(s).padStart(2, '0');
+
+    valEl.textContent = h > 24
+      ? Math.floor(h/24) + 'd ' + String(h%24).padStart(2,'0') + ':' + mm + ':' + ss
+      : hh + ':' + mm + ':' + ss;
+  }
+
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ── Prêmio + Ranking ─────────────────────────────────────────
+async function carregarDashboard() {
+  try {
+    // Image beacon para acionar, mas para leitura usamos fetch com no-cors fallback
+    const resp = await fetch(APPS_SCRIPT_URL + '?action=dashboard');
+    const data = await resp.json();
+
+    if (!data.sucesso) return;
+
+    // Prêmio
+    const premio = parseFloat(data.totalPremio);
+    document.getElementById('premio-val').textContent = 'R$ ' + premio.toFixed(2).replace('.', ',');
+    document.getElementById('premio-sub').textContent =
+      data.totalPalpites + ' palpite' + (data.totalPalpites !== 1 ? 's' : '') + ' registrado' + (data.totalPalpites !== 1 ? 's' : '');
+
+    // Ranking
+    if (data.ranking && data.ranking.length > 0) {
+      const card = document.getElementById('ranking-card');
+      const cont = document.getElementById('ranking-conteudo');
+      card.style.display = 'block';
+      cont.innerHTML = data.ranking.map(jogo => {
+        const acertaram = jogo.acertaram || [];
+        const itens = acertaram.length === 0
+          ? '<div class="ranking-vazio">Ninguém acertou — prêmio acumula!</div>'
+          : acertaram.map((a, i) => `
+              <div class="ranking-item">
+                <div class="ranking-pos">${i + 1}</div>
+                <div class="ranking-nome">${a.nome}</div>
+                <div style="font-size:.75rem;color:var(--verde);font-weight:600">Acertou!</div>
+              </div>`).join('');
+        const premioTexto = jogo.premio ? ' · Prêmio: R$ ' + parseFloat(jogo.premio).toFixed(2).replace('.', ',') : '';
+        return `
+          <div class="ranking-jogo">
+            <div class="ranking-jogo-header">
+              <span>${jogo.jogo}</span>
+              <span class="ranking-resultado">${jogo.resultado}${premioTexto}</span>
+            </div>
+            ${itens}
+          </div>`;
+      }).join('');
+    }
+  } catch (err) {
+    // Silencioso — não crítico
+    document.getElementById('premio-sub').textContent = 'Atualizando...';
+  }
+}
+
 inicializarTabs();
+iniciarCountdown();
+carregarDashboard();
 </script>
 </body>
 </html>

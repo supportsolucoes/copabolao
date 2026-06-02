@@ -1,13 +1,11 @@
 // ============================================================
 //  BOLÃO COPA 2026 — Google Apps Script
-//  Cole este código em: Extensões > Apps Script da planilha
-//  Depois: Implantar > Nova implantação > App da Web
-//  Execute como: Você | Acesso: Qualquer pessoa
+//  Cole em: Extensões > Apps Script da planilha
+//  Implantar > App da Web | Execute como: Você | Acesso: Qualquer pessoa
 // ============================================================
 
-var SHEET_ID       = '1vrXtyJVpkHrroZptjpnH-FrZ2OMgZMJTqUJxPcVKJl8';
-var WHATSAPP_TOKEN = 'COLE_AQUI_SEU_TOKEN_CALLMEBOT';
-var PRECO_UNIT     = 5.00;
+var SHEET_ID   = '1vrXtyJVpkHrroZptjpnH-FrZ2OMgZMJTqUJxPcVKJl8';
+var PRECO_UNIT = 5.00;
 
 var JOGOS = [
   { aba: 'Jogo1 - Brasil x Marrocos', nome: 'Brasil x Marrocos', time1: 'Brasil',  time2: 'Marrocos' },
@@ -15,7 +13,6 @@ var JOGOS = [
   { aba: 'Jogo3 - Escocia x Brasil',  nome: 'Escocia x Brasil',  time1: 'Escocia', time2: 'Brasil'   }
 ];
 
-// Cabeçalho base — T1 e T2 são substituídos pelo nome dos times em cada aba
 var CABECALHO_BASE = [
   'Codigo', 'Data/Hora', 'Nome', 'WhatsApp', 'Email',
   'GOL_T1', 'GOL_T2', 'Total Palpites', 'Total R$',
@@ -30,149 +27,51 @@ function cabecalhoJogo(jogo) {
   });
 }
 
-// ── Inicializa abas da planilha ──────────────────────────────
+// ── Inicializa planilha + aba Resultados ─────────────────────
 function inicializarPlanilha() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
+
+  // Abas dos jogos
   for (var i = 0; i < JOGOS.length; i++) {
     var jogo = JOGOS[i];
     var cab  = cabecalhoJogo(jogo);
     var aba  = ss.getSheetByName(jogo.aba);
     if (!aba) aba = ss.insertSheet(jogo.aba);
-    // Apaga e recria cabeçalho sempre (para atualizar nomes dos times)
-    if (aba.getLastRow() > 0) {
-      aba.getRange(1, 1, 1, cab.length).setValues([cab]);
-    } else {
-      var h = aba.getRange(1, 1, 1, cab.length);
-      h.setValues([cab]);
-      h.setBackground('#002776').setFontColor('#ffffff').setFontWeight('bold');
-      aba.setFrozenRows(1);
-      aba.setColumnWidths(1, cab.length, 150);
-    }
-    // Garante formatação do cabeçalho
-    aba.getRange(1, 1, 1, cab.length)
-       .setBackground('#002776').setFontColor('#ffffff').setFontWeight('bold');
+    var h = aba.getRange(1, 1, 1, cab.length);
+    h.setValues([cab]);
+    h.setBackground('#002776').setFontColor('#ffffff').setFontWeight('bold');
+    aba.setFrozenRows(1);
+    aba.setColumnWidths(1, cab.length, 150);
   }
-  SpreadsheetApp.getUi().alert('Planilha inicializada com sucesso!');
+
+  // Aba Resultados
+  var abaRes = ss.getSheetByName('Resultados');
+  if (!abaRes) abaRes = ss.insertSheet('Resultados');
+  if (abaRes.getLastRow() === 0) {
+    var cabRes = [['Jogo', 'Time1', 'Gol_Time1', 'Gol_Time2', 'Time2', 'Premio_Acumulado']];
+    abaRes.getRange(1, 1, 1, 6).setValues(cabRes)
+      .setBackground('#009c3b').setFontColor('#ffffff').setFontWeight('bold');
+    abaRes.setColumnWidths(1, 6, 160);
+    // Linhas iniciais para cada jogo
+    abaRes.appendRow(['Brasil x Marrocos', 'Brasil', '', '', 'Marrocos', '']);
+    abaRes.appendRow(['Brasil x Haiti',    'Brasil', '', '', 'Haiti',    '']);
+    abaRes.appendRow(['Escocia x Brasil',  'Escocia','', '', 'Brasil',   '']);
+  }
+
+  SpreadsheetApp.getUi().alert('Planilha inicializada! Preencha os resultados na aba "Resultados" após cada jogo.');
 }
 
-// ── Recebe POST (novo palpite) ───────────────────────────────
-function doPost(e) {
-  try {
-    var dados   = JSON.parse(e.postData.contents);
-    var ss      = SpreadsheetApp.openById(SHEET_ID);
-    var jogoIdx = parseInt(dados.jogoIndex);
-    var jogo    = JOGOS[jogoIdx];
-    if (!jogo) throw new Error('Jogo invalido');
-
-    var aba = ss.getSheetByName(jogo.aba);
-    if (!aba) {
-      aba = ss.insertSheet(jogo.aba);
-      aba.getRange(1, 1, 1, CABECALHO.length).setValues([CABECALHO]);
-    }
-
-    var agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
-    var linha = [
-      dados.codigo        || '',
-      agora,
-      dados.nome          || '',
-      dados.whatsapp      || '',
-      dados.email         || '',
-      dados.gol1 != null  ? dados.gol1 : '',
-      dados.gol2 != null  ? dados.gol2 : '',
-      dados.totalPalpites || 1,
-      dados.totalValor    || PRECO_UNIT,
-      'Pendente',
-      'Nao',
-      ''
-    ];
-
-    aba.appendRow(linha);
-    var ul = aba.getLastRow();
-    aba.getRange(ul, 1, 1, CABECALHO.length)
-       .setBackground(ul % 2 === 0 ? '#f0f4ff' : '#ffffff');
-
-    return resposta({ mensagem: 'Palpite registrado!' });
-  } catch (err) {
-    return falha(err.message);
-  }
-}
-
-// ── Recebe GET (palpite, status ou ping) ─────────────────────
+// ── GET — roteador principal ──────────────────────────────────
 function doGet(e) {
-  var action   = (e.parameter.action || '').toLowerCase();
-  var callback = e.parameter.callback || '';
+  var action = (e.parameter.action || '').toLowerCase();
 
-  if (action === 'palpite') {
-    var r = salvarPalpite(e.parameter);
-    if (callback) return jsonp(callback, r);
-    return r;
-  }
-
-  if (action === 'status') {
-    var codigo = e.parameter.codigo || '';
-    var dados  = consultarStatusDados(codigo);
-    var html;
-
-    if (!dados.encontrado) {
-      html = paginaStatus('❌ Código não encontrado',
-        'O código <strong>' + codigo + '</strong> não foi encontrado.<br>Verifique se digitou corretamente.',
-        '#fef2f2', '#dc2626');
-    } else if (dados.confirmado) {
-      html = paginaStatus('✅ Pagamento Confirmado!',
-        'Participante: <strong>' + dados.nome + '</strong><br>' +
-        'Jogo: <strong>' + dados.jogo + '</strong><br>' +
-        'Palpite: <strong>' + dados.gol1 + ' × ' + dados.gol2 + '</strong><br>' +
-        'Código: <strong>' + dados.codigo + '</strong>',
-        '#f0fdf4', '#15803d');
-    } else {
-      html = paginaStatus('⏳ Aguardando Confirmação',
-        'Participante: <strong>' + dados.nome + '</strong><br>' +
-        'Jogo: <strong>' + dados.jogo + '</strong><br>' +
-        'Palpite: <strong>' + dados.gol1 + ' × ' + dados.gol2 + '</strong><br>' +
-        'Código: <strong>' + dados.codigo + '</strong><br><br>' +
-        'Seu comprovante ainda não foi confirmado.<br>Aguarde até 1 hora após o envio.',
-        '#fff8e1', '#7a5800');
-    }
-    return HtmlService.createHtmlOutput(html)
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-  }
+  if (action === 'palpite')   return salvarPalpite(e.parameter);
+  if (action === 'dashboard') return getDashboard();
 
   return resposta({ status: 'online', bolao: 'Copa 2026' });
 }
 
-function jsonp(callback, result) {
-  return ContentService
-    .createTextOutput(callback + '(' + result.getContent() + ')')
-    .setMimeType(ContentService.MimeType.JAVASCRIPT);
-}
-
-// ── Retorna dados de status como objeto JS ───────────────────
-function consultarStatusDados(codigo) {
-  codigo = (codigo || '').trim().toUpperCase();
-  if (!codigo) return { sucesso: false, encontrado: false };
-
-  var ss = SpreadsheetApp.openById(SHEET_ID);
-  for (var i = 0; i < JOGOS.length; i++) {
-    var jogo = JOGOS[i];
-    var aba  = ss.getSheetByName(jogo.aba);
-    if (!aba || aba.getLastRow() < 2) continue;
-    var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 12).getValues();
-    for (var r = 0; r < dados.length; r++) {
-      var linha = dados[r];
-      if ((linha[0] || '').toString().trim().toUpperCase() === codigo) {
-        var confirmado = (linha[10] || '').toString().toLowerCase() === 'sim';
-        return {
-          sucesso: true, encontrado: true, confirmado: confirmado,
-          codigo: linha[0], jogo: jogo.nome,
-          nome: linha[2], gol1: linha[5], gol2: linha[6]
-        };
-      }
-    }
-  }
-  return { sucesso: true, encontrado: false };
-}
-
-// ── Salva palpite recebido via GET params ────────────────────
+// ── Salva palpite ─────────────────────────────────────────────
 function salvarPalpite(p) {
   try {
     var ss      = SpreadsheetApp.openById(SHEET_ID);
@@ -188,26 +87,24 @@ function salvarPalpite(p) {
       h.setValues([cab]);
       h.setBackground('#002776').setFontColor('#ffffff').setFontWeight('bold');
       aba.setFrozenRows(1);
-      aba.setColumnWidths(1, cab.length, 150);
     }
 
     var agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
-    var linha = [
-      p.codigo                                  || '',
+    aba.appendRow([
+      p.codigo || '',
       agora,
-      p.nome                                    || '',
-      p.whatsapp                                || '',
-      p.email                                   || '',
+      p.nome || '',
+      p.whatsapp || '',
+      p.email || '',
       p.gol1 !== undefined ? parseInt(p.gol1) : '',
       p.gol2 !== undefined ? parseInt(p.gol2) : '',
-      p.totalPalpites                           || 1,
-      p.totalValor                              || PRECO_UNIT,
+      p.totalPalpites || 1,
+      p.totalValor || PRECO_UNIT,
       'Pendente',
       'Nao',
       ''
-    ];
+    ]);
 
-    aba.appendRow(linha);
     var ul = aba.getLastRow();
     aba.getRange(ul, 1, 1, cab.length)
        .setBackground(ul % 2 === 0 ? '#f0f4ff' : '#ffffff');
@@ -218,116 +115,102 @@ function salvarPalpite(p) {
   }
 }
 
-// ── Consulta status por codigo ───────────────────────────────
-function consultarStatus(codigo) {
-  codigo = codigo.trim().toUpperCase();
-  if (!codigo) return falha('Codigo nao informado');
+// ── Dashboard: prêmio acumulado + ranking ─────────────────────
+function getDashboard() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
 
-  var ss = SpreadsheetApp.openById(SHEET_ID);
+    // ── 1. Prêmio acumulado: soma coluna I (índice 8) de todos os jogos ──
+    var totalPremio = 0;
+    var totalPalpites = 0;
+    for (var i = 0; i < JOGOS.length; i++) {
+      var aba = ss.getSheetByName(JOGOS[i].aba);
+      if (!aba || aba.getLastRow() < 2) continue;
+      var vals = aba.getRange(2, 9, aba.getLastRow() - 1, 1).getValues();
+      for (var r = 0; r < vals.length; r++) {
+        var v = parseFloat(vals[r][0]);
+        if (!isNaN(v)) { totalPremio += v; totalPalpites++; }
+      }
+    }
 
-  for (var i = 0; i < JOGOS.length; i++) {
-    var jogo = JOGOS[i];
-    var aba  = ss.getSheetByName(jogo.aba);
-    if (!aba || aba.getLastRow() < 2) continue;
+    // ── 2. Resultados + ranking por jogo ─────────────────────
+    var abaRes = ss.getSheetByName('Resultados');
+    var ranking = [];
 
-    var dados = aba.getRange(2, 1, aba.getLastRow() - 1, CABECALHO.length).getValues();
-    for (var r = 0; r < dados.length; r++) {
-      var linha = dados[r];
-      if ((linha[0] || '').toString().trim().toUpperCase() === codigo) {
-        var confirmado = (linha[10] || '').toString().toLowerCase() === 'sim';
-        return resposta({
-          encontrado: true,
-          confirmado: confirmado,
-          codigo:     linha[0],
-          jogo:       jogo.nome,
-          nome:       linha[2],
-          gol1:       linha[5],
-          gol2:       linha[6]
+    if (abaRes && abaRes.getLastRow() > 1) {
+      var resData = abaRes.getRange(2, 1, abaRes.getLastRow() - 1, 6).getValues();
+
+      for (var ri = 0; ri < resData.length; ri++) {
+        var linha   = resData[ri];
+        var nomeJogo = (linha[0] || '').toString().trim();
+        var g1Real   = linha[2] !== '' ? parseInt(linha[2]) : null;
+        var g2Real   = linha[3] !== '' ? parseInt(linha[3]) : null;
+        var premio   = linha[5] !== '' ? parseFloat(linha[5]) : null;
+
+        // Só processa jogo com resultado preenchido
+        if (g1Real === null || g2Real === null || isNaN(g1Real) || isNaN(g2Real)) continue;
+
+        // Busca palpites do jogo correspondente
+        var jogoRef = null;
+        for (var ji = 0; ji < JOGOS.length; ji++) {
+          if (JOGOS[ji].nome === nomeJogo) { jogoRef = JOGOS[ji]; break; }
+        }
+        if (!jogoRef) continue;
+
+        var abaJogo = ss.getSheetByName(jogoRef.aba);
+        if (!abaJogo || abaJogo.getLastRow() < 2) continue;
+
+        var palpites = abaJogo.getRange(2, 1, abaJogo.getLastRow() - 1, 12).getValues();
+        var acertaram = [];
+
+        for (var pi = 0; pi < palpites.length; pi++) {
+          var pal = palpites[pi];
+          var pgto = (pal[10] || '').toString().toLowerCase();
+          if (pgto !== 'sim') continue; // só conta quem pagou
+          var p1 = parseInt(pal[5]);
+          var p2 = parseInt(pal[6]);
+          if (p1 === g1Real && p2 === g2Real) {
+            acertaram.push({ nome: pal[2] });
+          }
+        }
+
+        ranking.push({
+          jogo:      nomeJogo,
+          resultado: g1Real + ' x ' + g2Real,
+          acertaram: acertaram,
+          premio:    premio
         });
       }
     }
-  }
 
-  return resposta({ encontrado: false });
+    return resposta({
+      totalPremio:   totalPremio.toFixed(2),
+      totalPalpites: totalPalpites,
+      ranking:       ranking
+    });
+
+  } catch(err) {
+    return falha(err.message);
+  }
 }
 
-// ── Trigger: notifica participante ao confirmar pagamento ────
-// Configure: Gatilhos (icone relogio) > onEdit > Ao editar
-function onEdit(e) {
+// ── POST (legado) ─────────────────────────────────────────────
+function doPost(e) {
   try {
-    var sheet = e.range.getSheet();
-    var col   = e.range.getColumn();
-    var row   = e.range.getRow();
-    var valor = (e.value || '').toString().toLowerCase();
-
-    // Coluna 11 = Pagamento Confirmado | deve ser "sim"
-    if (col !== 11 || row < 2 || valor !== 'sim') return;
-
-    var dados    = sheet.getRange(row, 1, 1, CABECALHO.length).getValues()[0];
-    var codigo   = dados[0];
-    var nome     = dados[2];
-    var whatsapp = dados[3];
-    var gol1     = dados[5];
-    var gol2     = dados[6];
-
-    var nomJogo  = '';
-    for (var i = 0; i < JOGOS.length; i++) {
-      if (JOGOS[i].aba === sheet.getName()) { nomJogo = JOGOS[i].nome; break; }
-    }
-
-    var msg = encodeURIComponent(
-      'BOLAO COPA 2026 - Confirmacao\n\n' +
-      'Ola, ' + nome + '!\n\n' +
-      'Seu palpite foi CONFIRMADO!\n\n' +
-      'Codigo: ' + codigo + '\n' +
-      'Jogo: ' + nomJogo + '\n' +
-      'Palpite: ' + gol1 + ' x ' + gol2 + '\n\n' +
-      'Boa sorte! Vai Brasil!'
-    );
-
-    var num = (whatsapp || '').replace(/\D/g, '');
-    if (num.length === 11) num = '55' + num;
-    if (num.length === 10) num = '55' + num;
-
-    if (num && WHATSAPP_TOKEN !== 'COLE_AQUI_SEU_TOKEN_CALLMEBOT') {
-      var url = 'https://api.callmebot.com/whatsapp.php?phone=' + num + '&text=' + msg + '&apikey=' + WHATSAPP_TOKEN;
-      UrlFetchApp.fetch(url);
-    }
-  } catch (err) {
-    console.error('Erro no onEdit: ' + err.message);
+    var dados = JSON.parse(e.postData.contents);
+    return salvarPalpite(dados);
+  } catch(err) {
+    return falha(err.message);
   }
 }
 
-// ── Gera página HTML de status ───────────────────────────────
-function paginaStatus(titulo, corpo, bgColor, textColor) {
-  return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">' +
-    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>Bolão Copa 2026 — Status</title>' +
-    '<style>*{box-sizing:border-box;margin:0;padding:0}' +
-    'body{font-family:Arial,sans-serif;background:#f5f6fa;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem}' +
-    '.card{background:#fff;border-radius:16px;padding:2rem;max-width:420px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.1)}' +
-    '.badge{background:' + bgColor + ';color:' + textColor + ';border-radius:12px;padding:1.2rem;margin-bottom:1.2rem}' +
-    '.titulo{font-size:1.4rem;font-weight:700;margin-bottom:.75rem;color:' + textColor + '}' +
-    '.corpo{font-size:.95rem;line-height:1.7;color:#374151}' +
-    '.btn{display:inline-block;margin-top:1.5rem;background:#002776;color:#fff;border:none;border-radius:10px;padding:.75rem 1.5rem;font-size:1rem;font-weight:600;cursor:pointer;text-decoration:none}' +
-    '.logo{font-size:2rem;margin-bottom:.5rem}' +
-    '</style></head><body>' +
-    '<div class="card">' +
-    '<div class="logo">⚽🇧🇷</div>' +
-    '<div style="font-family:Arial;font-size:1.1rem;font-weight:700;color:#002776;letter-spacing:1px;margin-bottom:1rem">BOLÃO COPA 2026</div>' +
-    '<div class="badge"><div class="titulo">' + titulo + '</div><div class="corpo">' + corpo + '</div></div>' +
-    '<a class="btn" href="javascript:window.close()">Fechar</a>' +
-    '</div></body></html>';
-}
-
-// ── Helpers ──────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 function resposta(obj) {
   obj.sucesso = true;
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
-
 function falha(msg) {
   return ContentService
     .createTextOutput(JSON.stringify({ sucesso: false, erro: msg }))
