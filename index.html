@@ -773,8 +773,14 @@ async function abrirPalpites() {
   document.getElementById('modal-overlay').classList.add('ativo');
   document.getElementById('modal-tabs').innerHTML = '';
   document.getElementById('modal-conteudo').innerHTML = `
+    <div id="iframe-loading" style="text-align:center;padding:2rem;color:var(--texto-sec)">
+      <div class="spinner" style="border-top-color:var(--verde);margin:0 auto 1rem"></div>
+      <div style="font-size:.85rem">Carregando palpites...</div>
+    </div>
     <iframe src="${APPS_SCRIPT_URL}?action=ver"
-      style="width:100%;height:60vh;border:none;border-radius:8px"
+      style="width:100%;height:60vh;border:none;border-radius:8px;display:none"
+      id="palpites-iframe"
+      onload="document.getElementById('iframe-loading').style.display='none';this.style.display='block'"
       title="Palpites do Grupo">
     </iframe>`;
 }
