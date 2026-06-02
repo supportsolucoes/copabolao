@@ -147,6 +147,20 @@
 
   .chip { display: inline-flex; align-items: center; gap: 4px; background: #fff8e1; color: #7a5800; border: 1px solid #f5c842; border-radius: 20px; padding: 3px 11px; font-size: .73rem; font-weight: 500; margin-bottom: .8rem; }
   .aviso-carrinho-vazio { font-size: .78rem; color: #dc2626; margin-top: 6px; display: none; text-align: center; }
+
+  /* STATUS BOX */
+  .status-box { margin-top: 1.5rem; background: var(--cinza-bg); border: 1px solid var(--cinza-borda); border-radius: var(--radius); padding: 1rem 1.1rem; text-align: left; }
+  .status-box-title { font-size: .82rem; font-weight: 600; color: var(--texto); margin-bottom: .75rem; display: flex; align-items: center; gap: 6px; }
+  .status-input-row { display: flex; gap: 8px; }
+  .status-input-row input { flex: 1; padding: .55rem .75rem; border: 1px solid var(--cinza-borda); border-radius: var(--radius); font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; background: var(--branco); color: var(--azul); outline: none; text-transform: uppercase; }
+  .status-input-row input:focus { border-color: var(--azul); }
+  .btn-status-check { background: var(--azul); color: white; border: none; border-radius: var(--radius); padding: .55rem 1rem; font-family: 'Barlow', sans-serif; font-size: .85rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity .15s; }
+  .btn-status-check:hover { opacity: .88; }
+  .btn-status-check:disabled { opacity: .5; cursor: not-allowed; }
+  #status-resultado { margin-top: .75rem; font-size: .85rem; border-radius: var(--radius); padding: .65rem .85rem; display: none; }
+  #status-resultado.aguardando { background: #fff8e1; border: 1px solid #f5c842; color: #7a5800; display: block; }
+  #status-resultado.confirmado { background: #f0fdf4; border: 1px solid #86efac; color: #15803d; display: block; }
+  #status-resultado.nao-encontrado { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; display: block; }
 </style>
 </head>
 <body>
@@ -320,12 +334,25 @@
       ABRIR GRUPO E ENVIAR
     </button>
 
-    <div id="copiado-aviso" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius);padding:.6rem 1rem;font-size:.82rem;color:#15803d;display:none;align-items:center;gap:6px;">
+    <div id="copiado-aviso" style="display:none;margin-top:10px;background:#f0fdf4;border:1px solid #86efac;border-radius:var(--radius);padding:.6rem 1rem;font-size:.82rem;color:#15803d;align-items:center;gap:6px;">
       <i class="ti ti-check" style="font-size:16px"></i>
       Mensagem copiada! Agora cole no grupo e anexe o comprovante.
     </div>
 
     <div class="info-txt" style="margin-top:10px">Confirmação em até 1 hora após o envio.</div>
+
+    <!-- CONSULTA DE STATUS -->
+    <div class="status-box" id="status-box">
+      <div class="status-box-title"><i class="ti ti-search" style="font-size:16px;color:var(--verde)"></i> Consultar status do palpite</div>
+      <div class="status-input-row">
+        <input type="text" id="status-codigo" placeholder="Ex: J1-K7MN" maxlength="7" oninput="this.value=this.value.toUpperCase()">
+        <button class="btn-status-check" onclick="consultarStatus()">
+          <span id="btn-status-txt">Consultar</span>
+        </button>
+      </div>
+      <div id="status-resultado"></div>
+    </div>
+
   </div>
 
 </div><!-- /container -->
@@ -654,6 +681,51 @@ function mostrarSucesso(nome) {
   const tela = document.getElementById('tela-sucesso');
   tela.style.display = 'block';
   tela.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Consulta de status ────────────────────────────────────────
+async function consultarStatus() {
+  const codigo = document.getElementById('status-codigo').value.trim().toUpperCase();
+  const resultado = document.getElementById('status-resultado');
+  const btn = document.getElementById('btn-status-txt');
+
+  if (!codigo || codigo.length < 6) {
+    resultado.className = 'nao-encontrado';
+    resultado.innerHTML = '⚠️ Digite um código válido (ex: J1-K7MN)';
+    return;
+  }
+
+  btn.textContent = 'Consultando...';
+  document.querySelector('.btn-status-check').disabled = true;
+  resultado.className = '';
+  resultado.style.display = 'none';
+
+  try {
+    const url = `${APPS_SCRIPT_URL}?action=status&codigo=${encodeURIComponent(codigo)}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (!data.encontrado) {
+      resultado.className = 'nao-encontrado';
+      resultado.innerHTML = `❌ Código <strong>${codigo}</strong> não encontrado. Verifique se digitou corretamente.`;
+    } else if (data.confirmado) {
+      resultado.className = 'confirmado';
+      resultado.innerHTML = `✅ <strong>Pagamento confirmado!</strong><br>
+        Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}<br>
+        Participante: ${data.nome}`;
+    } else {
+      resultado.className = 'aguardando';
+      resultado.innerHTML = `⏳ <strong>Aguardando confirmação do comprovante.</strong><br>
+        Jogo: ${data.jogo} · Palpite: ${data.gol1} × ${data.gol2}<br>
+        Se já enviou no grupo, aguarde até 1 hora.`;
+    }
+  } catch (err) {
+    resultado.className = 'nao-encontrado';
+    resultado.innerHTML = '❌ Erro ao consultar. Tente novamente em instantes.';
+  } finally {
+    btn.textContent = 'Consultar';
+    document.querySelector('.btn-status-check').disabled = false;
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────
