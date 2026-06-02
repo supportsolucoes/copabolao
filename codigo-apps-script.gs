@@ -133,15 +133,15 @@ function salvarPalpite(p) {
 
     var agora = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm:ss');
     var linha = [
-      p.codigo        || '',
+      p.codigo                                  || '',
       agora,
-      p.nome          || '',
-      p.whatsapp      || '',
-      p.email         || '',
-      p.gol1          || '',
-      p.gol2          || '',
-      p.totalPalpites || 1,
-      p.totalValor    || PRECO_UNIT,
+      p.nome                                    || '',
+      p.whatsapp                                || '',
+      p.email                                   || '',
+      p.gol1 !== undefined ? parseInt(p.gol1) : '',
+      p.gol2 !== undefined ? parseInt(p.gol2) : '',
+      p.totalPalpites                           || 1,
+      p.totalValor                              || PRECO_UNIT,
       'Pendente',
       'Nao',
       ''

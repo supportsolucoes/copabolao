@@ -574,17 +574,20 @@ async function confirmar() {
 }
 
 function enviarViaForm(dados) {
-  return new Promise(resolve=>{
-    const iframe=document.createElement('iframe');
-    iframe.name='hf_'+Date.now(); iframe.style.display='none';
-    document.body.appendChild(iframe);
-    const url=APPS_SCRIPT_URL+'?action=palpite'+Object.entries(dados).map(([k,v])=>`&${k}=${encodeURIComponent(v)}`).join('');
-    const form=document.createElement('form');
-    form.method='GET'; form.action=url; form.target=iframe.name; form.style.display='none';
-    document.body.appendChild(form);
-    iframe.onload=()=>{ setTimeout(()=>{ document.body.removeChild(form); document.body.removeChild(iframe); resolve(); },300); };
-    form.submit();
-    setTimeout(resolve,3000);
+  return new Promise(resolve => {
+    const params = Object.entries(dados)
+      .map(([k,v]) => `${k}=${encodeURIComponent(v)}`)
+      .join('&');
+    const url = `${APPS_SCRIPT_URL}?action=palpite&${params}`;
+
+    // Usa Image beacon — funciona cross-origin sem CORS
+    const img = new Image();
+    img.onload  = () => resolve();
+    img.onerror = () => resolve(); // Apps Script retorna JSON, não imagem — onerror é esperado mas dados foram enviados
+    img.src = url;
+
+    // Garante resolução mesmo sem resposta
+    setTimeout(resolve, 4000);
   });
 }
 
