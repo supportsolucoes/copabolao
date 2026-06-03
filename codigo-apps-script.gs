@@ -69,6 +69,9 @@ function doGet(e) {
   if (action === 'dashboard')  return getDashboard();
   if (action === 'palpites')   return getPalpites();
   if (action === 'ver')        return getPaginaPalpites();
+  if (action === 'admin')      return getDadosAdmin();
+  if (action === 'pgto')       return confirmarPagamento(e.parameter);
+  if (action === 'resultado')  return salvarResultado(e.parameter);
 
   return resposta({ status: 'online', bolao: 'Copa 2026' });
 }
@@ -302,6 +305,97 @@ function getPaginaPalpites() {
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
+// ── Dados completos para o painel admin ──────────────────────
+function getDadosAdmin() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var totalPremio = 0, totalPalpites = 0, totalPendentes = 0;
+    var palpites = [];
+
+    for (var i = 0; i < JOGOS.length; i++) {
+      var jogo = JOGOS[i];
+      var aba  = ss.getSheetByName(jogo.aba);
+      var itens = [];
+      if (aba && aba.getLastRow() > 1) {
+        var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 12).getValues();
+        for (var r = 0; r < dados.length; r++) {
+          var linha = dados[r];
+          var val = parseFloat(linha[8]);
+          if (!isNaN(val)) totalPremio += val;
+          totalPalpites++;
+          var pgto = (linha[10] || '').toString().toLowerCase();
+          if (pgto !== 'sim') totalPendentes++;
+          itens.push({ codigo: linha[0], nome: linha[2], whats: linha[3], g1: linha[5], g2: linha[6], comp: linha[9], pgto: pgto });
+        }
+      }
+      palpites.push({ jogo: jogo.nome, itens: itens });
+    }
+
+    var resultados = [];
+    var abaRes = ss.getSheetByName('Resultados');
+    if (abaRes && abaRes.getLastRow() > 1) {
+      var resData = abaRes.getRange(2, 1, abaRes.getLastRow() - 1, 5).getValues();
+      for (var ri = 0; ri < resData.length; ri++) {
+        var rg1 = resData[ri][2], rg2 = resData[ri][3];
+        resultados.push(rg1 !== '' && rg2 !== '' ? { g1: parseInt(rg1), g2: parseInt(rg2) } : {});
+      }
+    }
+
+    var ranking = [];
+    for (var ji = 0; ji < JOGOS.length; ji++) {
+      var res = resultados[ji];
+      if (!res || res.g1 === undefined) continue;
+      var aba2 = ss.getSheetByName(JOGOS[ji].aba);
+      if (!aba2 || aba2.getLastRow() < 2) continue;
+      var dados2 = aba2.getRange(2, 1, aba2.getLastRow() - 1, 12).getValues();
+      var acertaram = [];
+      for (var ri2 = 0; ri2 < dados2.length; ri2++) {
+        var l = dados2[ri2];
+        if ((l[10] || '').toString().toLowerCase() !== 'sim') continue;
+        if (parseInt(l[5]) === res.g1 && parseInt(l[6]) === res.g2) {
+          acertaram.push({ nome: l[2], p1: l[5], p2: l[6] });
+        }
+      }
+      ranking.push({ jogo: JOGOS[ji].nome, resultado: res.g1 + ' × ' + res.g2, acertaram: acertaram });
+    }
+
+    return resposta({ totalPremio: totalPremio.toFixed(2), totalPalpites: totalPalpites, totalPendentes: totalPendentes, palpites: palpites, resultados: resultados, ranking: ranking });
+  } catch(err) { return falha(err.message); }
+}
+
+// ── Confirmar pagamento ───────────────────────────────────────
+function confirmarPagamento(p) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var jogo = JOGOS[parseInt(p.jogoIndex)];
+    var status = (p.status || 'nao').toLowerCase() === 'sim' ? 'Sim' : 'Nao';
+    var aba = ss.getSheetByName(jogo.aba);
+    if (!aba) return falha('Aba não encontrada');
+    var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 1).getValues();
+    for (var r = 0; r < dados.length; r++) {
+      if ((dados[r][0] || '').toString() === p.codigo) {
+        aba.getRange(r + 2, 11).setValue(status);
+        return resposta({ mensagem: 'Pagamento atualizado!' });
+      }
+    }
+    return falha('Código não encontrado');
+  } catch(err) { return falha(err.message); }
+}
+
+// ── Salvar resultado ──────────────────────────────────────────
+function salvarResultado(p) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var jogoIdx = parseInt(p.jogoIndex);
+    var abaRes = ss.getSheetByName('Resultados');
+    if (!abaRes) return falha('Aba Resultados não encontrada');
+    abaRes.getRange(jogoIdx + 2, 3).setValue(parseInt(p.g1));
+    abaRes.getRange(jogoIdx + 2, 4).setValue(parseInt(p.g2));
+    atualizarPremioAcumulado(ss);
+    return resposta({ mensagem: 'Resultado salvo!' });
+  } catch(err) { return falha(err.message); }
+}
+
 function doPost(e) {
   try {
     var dados = JSON.parse(e.postData.contents);

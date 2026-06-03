@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Bolão Copa 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --verde:#009c3b; --amarelo:#ffdf00; --azul:#002776;
+    --branco:#ffffff; --cinza-bg:#f5f6fa; --cinza-borda:#e0e3ee;
+    --texto:#1a1a2e; --texto-sec:#6b7280; --radius:10px; --radius-lg:16px;
+    --vermelho:#dc2626; --laranja:#f59e0b;
+  }
+  body { font-family:'Barlow',sans-serif; background:var(--cinza-bg); color:var(--texto); min-height:100vh; }
+
+  /* LOGIN */
+  .login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem; }
+  .login-box { background:var(--branco); border-radius:var(--radius-lg); padding:2.5rem 2rem; max-width:380px; width:100%; text-align:center; box-shadow:0 4px 24px rgba(0,0,0,.1); }
+  .login-logo { font-size:3rem; margin-bottom:.5rem; }
+  .login-title { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; color:var(--azul); letter-spacing:2px; margin-bottom:.25rem; }
+  .login-sub { font-size:.85rem; color:var(--texto-sec); margin-bottom:1.5rem; }
+  .login-input { width:100%; padding:.75rem 1rem; border:1px solid var(--cinza-borda); border-radius:var(--radius); font-family:'Barlow',sans-serif; font-size:1rem; outline:none; margin-bottom:.75rem; text-align:center; letter-spacing:3px; }
+  .login-input:focus { border-color:var(--azul); }
+  .login-btn { width:100%; background:var(--azul); color:white; border:none; border-radius:var(--radius); padding:.85rem; font-family:'Bebas Neue',sans-serif; font-size:1.2rem; letter-spacing:2px; cursor:pointer; }
+  .login-btn:hover { opacity:.9; }
+  .login-erro { color:var(--vermelho); font-size:.82rem; margin-top:.5rem; display:none; }
+
+  /* ADMIN */
+  .admin-screen { display:none; }
+  .topbar { background:var(--azul); padding:.85rem 1.5rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+  .topbar-title { font-family:'Bebas Neue',sans-serif; font-size:1.4rem; color:var(--amarelo); letter-spacing:2px; display:flex; align-items:center; gap:8px; }
+  .topbar-right { display:flex; align-items:center; gap:12px; }
+  .btn-sair { background:rgba(255,255,255,.15); border:none; color:white; border-radius:var(--radius); padding:5px 12px; font-family:'Barlow',sans-serif; font-size:.82rem; cursor:pointer; display:flex; align-items:center; gap:5px; }
+  .btn-sair:hover { background:rgba(255,255,255,.25); }
+  .btn-atualizar { background:var(--verde); border:none; color:white; border-radius:var(--radius); padding:5px 12px; font-family:'Barlow',sans-serif; font-size:.82rem; cursor:pointer; display:flex; align-items:center; gap:5px; }
+
+  .admin-body { padding:1.25rem; max-width:900px; margin:0 auto; }
+
+  /* CARDS RESUMO */
+  .resumo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:1.25rem; }
+  .resumo-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1.1rem; text-align:center; }
+  .resumo-card-val { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:1px; line-height:1; }
+  .resumo-card-lbl { font-size:.72rem; color:var(--texto-sec); text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+  .val-verde { color:var(--verde); }
+  .val-azul { color:var(--azul); }
+  .val-laranja { color:var(--laranja); }
+
+  /* TABS */
+  .tabs { display:flex; gap:8px; margin-bottom:1rem; border-bottom:1px solid var(--cinza-borda); padding-bottom:0; overflow-x:auto; }
+  .tab { padding:.6rem 1rem; font-size:.85rem; font-weight:600; color:var(--texto-sec); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:all .15s; }
+  .tab.ativo { color:var(--azul); border-bottom-color:var(--azul); }
+
+  /* SEÇÃO RESULTADO */
+  .resultado-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:1rem; }
+  .resultado-title { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--azul); letter-spacing:1px; margin-bottom:1rem; display:flex; align-items:center; gap:8px; }
+  .resultado-row { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px; margin-bottom:1rem; }
+  .resultado-time { text-align:center; font-weight:600; font-size:.9rem; }
+  .resultado-inputs { display:flex; align-items:center; gap:8px; }
+  .res-input { width:52px; height:52px; text-align:center; font-size:1.4rem; font-family:'Bebas Neue',sans-serif; color:var(--azul); border:2px solid var(--cinza-borda); border-radius:var(--radius); background:var(--cinza-bg); outline:none; }
+  .res-input:focus { border-color:var(--azul); }
+  .res-sep { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; color:var(--texto-sec); }
+  .btn-salvar-resultado { background:var(--verde); color:white; border:none; border-radius:var(--radius); padding:.7rem 1.5rem; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .btn-salvar-resultado:hover { opacity:.9; }
+  .resultado-atual { font-size:.82rem; color:var(--texto-sec); margin-top:.5rem; }
+
+  /* TABELA PALPITES */
+  .tabela-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:1rem; }
+  .tabela-header { display:grid; grid-template-columns:1fr 1fr 80px 100px 100px; gap:8px; padding:.65rem 1rem; background:var(--azul); font-size:.75rem; font-weight:600; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; }
+  .tabela-linha { display:grid; grid-template-columns:1fr 1fr 80px 100px 100px; gap:8px; padding:.65rem 1rem; border-bottom:1px solid var(--cinza-borda); font-size:.84rem; align-items:center; }
+  .tabela-linha:last-child { border-bottom:none; }
+  .tabela-linha:hover { background:var(--cinza-bg); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:.72rem; font-weight:600; }
+  .badge-pendente { background:#fff8e1; color:#7a5800; }
+  .badge-confirmado { background:#f0fdf4; color:#15803d; }
+  .badge-nao { background:#fef2f2; color:#991b1b; }
+  .placar-badge { font-family:'Bebas Neue',sans-serif; font-size:.95rem; color:var(--azul); background:var(--cinza-bg); border-radius:6px; padding:1px 8px; letter-spacing:1px; }
+  .btn-confirmar-pgto { background:var(--verde); color:white; border:none; border-radius:6px; padding:3px 10px; font-size:.75rem; cursor:pointer; font-family:'Barlow',sans-serif; font-weight:600; }
+  .btn-confirmar-pgto:hover { opacity:.85; }
+  .btn-estornar { background:#fee2e2; color:var(--vermelho); border:none; border-radius:6px; padding:3px 10px; font-size:.75rem; cursor:pointer; font-family:'Barlow',sans-serif; font-weight:600; }
+  .tabela-vazio { padding:2rem; text-align:center; color:var(--texto-sec); font-size:.85rem; }
+
+  /* RANKING */
+  .ranking-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:1rem; }
+  .ranking-title { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--azul); letter-spacing:1px; margin-bottom:1rem; display:flex; align-items:center; gap:8px; }
+  .ranking-item { display:flex; align-items:center; gap:10px; padding:.6rem .75rem; border-radius:var(--radius); margin-bottom:6px; }
+  .ranking-item:nth-child(1) { background:#fff8e1; border:1px solid #f5c842; }
+  .ranking-item:nth-child(2) { background:#f5f5f5; border:1px solid #d1d5db; }
+  .ranking-item:nth-child(3) { background:#fff4ed; border:1px solid #fed7aa; }
+  .ranking-item:nth-child(n+4) { background:var(--cinza-bg); border:1px solid var(--cinza-borda); }
+  .ranking-pos { font-family:'Bebas Neue',sans-serif; font-size:1.3rem; width:28px; text-align:center; flex-shrink:0; }
+  .ranking-nome { flex:1; font-weight:600; font-size:.88rem; }
+  .ranking-placar { font-size:.78rem; color:var(--texto-sec); }
+  .ranking-vazio { text-align:center; color:var(--texto-sec); font-size:.85rem; padding:1.5rem; }
+
+  /* OVERLAY */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,39,118,.5); z-index:999; align-items:center; justify-content:center; flex-direction:column; gap:1rem; }
+  .overlay.ativo { display:flex; }
+  .spinner { width:40px; height:40px; border:4px solid rgba(255,255,255,.3); border-top-color:var(--amarelo); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .overlay-txt { color:white; font-family:'Bebas Neue',sans-serif; font-size:1.3rem; letter-spacing:2px; }
+
+  .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%); background:#1a1a2e; color:white; padding:.65rem 1.25rem; border-radius:var(--radius); font-size:.85rem; z-index:1001; opacity:0; transition:opacity .3s; pointer-events:none; }
+  .toast.show { opacity:1; }
+
+  @media(max-width:600px) {
+    .resumo-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
+    .resumo-card-val { font-size:1.4rem; }
+    .tabela-header, .tabela-linha { grid-template-columns:1fr 70px 80px; }
+    .tabela-header .col-whats, .tabela-linha .col-whats,
+    .tabela-header .col-data, .tabela-linha .col-data { display:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">⚽</div>
+    <div class="login-title">Painel Admin</div>
+    <div class="login-sub">Bolão Copa 2026 · Acesso restrito</div>
+    <input type="password" class="login-input" id="senha-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')entrar()">
+    <button class="login-btn" onclick="entrar()">ENTRAR</button>
+    <div class="login-erro" id="login-erro">Senha incorreta. Tente novamente.</div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="admin-screen" id="admin-screen">
+  <div class="topbar">
+    <div class="topbar-title"><i class="ti ti-shield-check" style="font-size:20px"></i> Admin — Bolão Copa 2026</div>
+    <div class="topbar-right">
+      <button class="btn-atualizar" onclick="carregarDados()"><i class="ti ti-refresh" style="font-size:15px"></i> Atualizar</button>
+      <button class="btn-sair" onclick="sair()"><i class="ti ti-logout" style="font-size:15px"></i> Sair</button>
+    </div>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- RESUMO -->
+    <div class="resumo-grid">
+      <div class="resumo-card">
+        <div class="resumo-card-val val-verde" id="res-total">R$ --</div>
+        <div class="resumo-card-lbl">💰 Total arrecadado</div>
+      </div>
+      <div class="resumo-card">
+        <div class="resumo-card-val val-azul" id="res-palpites">--</div>
+        <div class="resumo-card-lbl">⚽ Palpites</div>
+      </div>
+      <div class="resumo-card">
+        <div class="resumo-card-val val-laranja" id="res-pendentes">--</div>
+        <div class="resumo-card-lbl">⏳ Pendentes</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs" id="tabs"></div>
+
+    <!-- CONTEÚDO -->
+    <div id="conteudo-admin"></div>
+
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="spinner"></div>
+  <div class="overlay-txt" id="overlay-txt">Carregando...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWZzuTN09Ta4nHDh0bp7_JwwDEqLwxPDfJJ3sElYrI0_PRNrRJTzluEfftxQTRjHtThQ/exec';
+const SENHA = 'Fib@9482';
+
+const JOGOS = [
+  { idx:0, nome:'Brasil x Marrocos', time1:'Brasil',  time2:'Marrocos' },
+  { idx:1, nome:'Brasil x Haiti',    time1:'Brasil',  time2:'Haiti'    },
+  { idx:2, nome:'Escócia x Brasil',  time1:'Escócia', time2:'Brasil'   },
+];
+
+let dadosAdmin = null;
+let jogoAtivo  = 0;
+
+// ── Login ─────────────────────────────────────────────────────
+function entrar() {
+  const v = document.getElementById('senha-input').value;
+  if (v === SENHA) {
+    document.getElementById('login-screen').style.display  = 'none';
+    document.getElementById('admin-screen').style.display  = 'block';
+    carregarDados();
+  } else {
+    document.getElementById('login-erro').style.display = 'block';
+    document.getElementById('senha-input').value = '';
+    document.getElementById('senha-input').focus();
+  }
+}
+
+function sair() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('senha-input').value = '';
+  dadosAdmin = null;
+}
+
+// ── Carregar dados ────────────────────────────────────────────
+async function carregarDados() {
+  mostrarOverlay('Carregando dados...');
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL + '?action=admin');
+    const data = await resp.json();
+    if (!data.sucesso) throw new Error(data.erro);
+    dadosAdmin = data;
+    renderAdmin();
+  } catch(err) {
+    toast('❌ Erro ao carregar: ' + err.message);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
+// ── Render principal ──────────────────────────────────────────
+function renderAdmin() {
+  const d = dadosAdmin;
+
+  // Resumo
+  document.getElementById('res-total').textContent    = 'R$ ' + parseFloat(d.totalPremio).toFixed(2).replace('.', ',');
+  document.getElementById('res-palpites').textContent = d.totalPalpites;
+  document.getElementById('res-pendentes').textContent = d.totalPendentes;
+
+  // Tabs
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = JOGOS.map((j, i) =>
+    `<div class="tab ${i===jogoAtivo?'ativo':''}" onclick="trocarJogo(${i})">${j.nome}</div>`
+  ).join('') + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`;
+
+  renderConteudo();
+}
+
+function trocarJogo(idx) {
+  jogoAtivo = idx;
+  renderAdmin();
+}
+
+function renderConteudo() {
+  const cont = document.getElementById('conteudo-admin');
+  if (jogoAtivo === 3) { renderRanking(cont); return; }
+
+  const jogo    = JOGOS[jogoAtivo];
+  const palpites = (dadosAdmin.palpites || [])[jogoAtivo] || { itens: [] };
+  const resultado = (dadosAdmin.resultados || [])[jogoAtivo] || {};
+
+  // Confirmados e pendentes
+  const confirmados = palpites.itens.filter(p => p.pgto === 'sim').length;
+  const pendentes   = palpites.itens.filter(p => p.pgto !== 'sim').length;
+
+  cont.innerHTML = `
+    <!-- LANÇAR RESULTADO -->
+    <div class="resultado-card">
+      <div class="resultado-title"><i class="ti ti-pencil" style="font-size:18px;color:var(--verde)"></i>Lançar Resultado — ${jogo.nome}</div>
+      <div class="resultado-row">
+        <div class="resultado-time">${jogo.time1}</div>
+        <div class="resultado-inputs">
+          <input type="number" class="res-input" id="res1-${jogoAtivo}" min="0" max="20" value="${resultado.g1 !== undefined ? resultado.g1 : ''}" placeholder="0">
+          <span class="res-sep">×</span>
+          <input type="number" class="res-input" id="res2-${jogoAtivo}" min="0" max="20" value="${resultado.g2 !== undefined ? resultado.g2 : ''}" placeholder="0">
+        </div>
+        <div class="resultado-time">${jogo.time2}</div>
+      </div>
+      ${resultado.g1 !== undefined ? `<div class="resultado-atual">✅ Resultado atual: <strong>${resultado.g1} × ${resultado.g2}</strong></div>` : ''}
+      <button class="btn-salvar-resultado" onclick="salvarResultado(${jogoAtivo})">
+        <i class="ti ti-device-floppy" style="font-size:16px"></i> SALVAR RESULTADO
+      </button>
+    </div>
+
+    <!-- PALPITES -->
+    <div class="tabela-card">
+      <div class="tabela-header">
+        <div>Nome</div>
+        <div class="col-whats">WhatsApp</div>
+        <div>Palpite</div>
+        <div>Comprovante</div>
+        <div>Pagamento</div>
+      </div>
+      ${palpites.itens.length === 0
+        ? `<div class="tabela-vazio">Nenhum palpite para este jogo ainda.</div>`
+        : palpites.itens.map((p, i) => `
+          <div class="tabela-linha">
+            <div><strong>${p.nome}</strong><br><span style="font-size:.72rem;color:var(--texto-sec)">${p.codigo}</span></div>
+            <div class="col-whats" style="font-size:.78rem;color:var(--texto-sec)">${p.whats}</div>
+            <div><span class="placar-badge">${p.g1} × ${p.g2}</span></div>
+            <div><span class="badge badge-${p.comp === 'Pendente' ? 'pendente' : 'confirmado'}">${p.comp}</span></div>
+            <div>
+              ${p.pgto === 'sim'
+                ? `<span class="badge badge-confirmado">✅ Confirmado</span>
+                   <button class="btn-estornar" onclick="alterarPgto(${jogoAtivo},${i},'nao')" style="margin-top:3px">Estornar</button>`
+                : `<button class="btn-confirmar-pgto" onclick="alterarPgto(${jogoAtivo},${i},'sim')">✅ Confirmar</button>`
+              }
+            </div>
+          </div>`).join('')
+      }
+    </div>
+    <div style="font-size:.78rem;color:var(--texto-sec);text-align:right;margin-top:-6px;margin-bottom:1rem">
+      ✅ ${confirmados} confirmado(s) · ⏳ ${pendentes} pendente(s)
+    </div>
+  `;
+}
+
+function renderRanking(cont) {
+  const ranking = dadosAdmin.ranking || [];
+  if (ranking.length === 0) {
+    cont.innerHTML = `<div class="ranking-card"><div class="ranking-vazio">Nenhum resultado lançado ainda.</div></div>`;
+    return;
+  }
+
+  cont.innerHTML = ranking.map(jogo => {
+    const itens = (jogo.acertaram || []).length === 0
+      ? `<div class="ranking-vazio">Ninguém acertou — prêmio acumula!</div>`
+      : jogo.acertaram.map((a, i) => `
+          <div class="ranking-item">
+            <div class="ranking-pos">${['🥇','🥈','🥉'][i] || (i+1)}</div>
+            <div><div class="ranking-nome">${a.nome}</div><div class="ranking-placar">Palpite: ${a.p1} × ${a.p2}</div></div>
+          </div>`).join('');
+    return `
+      <div class="ranking-card">
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.jogo} · ${jogo.resultado}</div>
+        ${itens}
+      </div>`;
+  }).join('');
+}
+
+// ── Confirmar / estornar pagamento ────────────────────────────
+async function alterarPgto(jogoIdx, itemIdx, status) {
+  const item = dadosAdmin.palpites[jogoIdx].itens[itemIdx];
+  mostrarOverlay(status === 'sim' ? 'Confirmando pagamento...' : 'Estornando...');
+  try {
+    await enviarBeacon(`action=pgto&jogoIndex=${jogoIdx}&codigo=${encodeURIComponent(item.codigo)}&status=${status}`);
+    item.pgto = status;
+    renderAdmin();
+    toast(status === 'sim' ? '✅ Pagamento confirmado!' : '↩️ Pagamento estornado.');
+  } catch(err) {
+    toast('❌ Erro: ' + err.message);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
+// ── Salvar resultado ──────────────────────────────────────────
+async function salvarResultado(jogoIdx) {
+  const g1 = document.getElementById(`res1-${jogoIdx}`).value;
+  const g2 = document.getElementById(`res2-${jogoIdx}`).value;
+  if (g1 === '' || g2 === '') { toast('⚽ Preencha o placar antes de salvar.'); return; }
+  mostrarOverlay('Salvando resultado...');
+  try {
+    await enviarBeacon(`action=resultado&jogoIndex=${jogoIdx}&g1=${g1}&g2=${g2}`);
+    if (!dadosAdmin.resultados) dadosAdmin.resultados = [];
+    dadosAdmin.resultados[jogoIdx] = { g1: parseInt(g1), g2: parseInt(g2) };
+    await carregarDados();
+    toast('✅ Resultado salvo e ranking atualizado!');
+  } catch(err) {
+    toast('❌ Erro: ' + err.message);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
+// ── Image beacon (cross-origin write) ────────────────────────
+function enviarBeacon(params) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = img.onerror = () => resolve();
+    img.src = APPS_SCRIPT_URL + '?' + params;
+    setTimeout(resolve, 5000);
+  });
+}
+
+// ── UI helpers ────────────────────────────────────────────────
+function mostrarOverlay(txt) {
+  document.getElementById('overlay-txt').textContent = txt;
+  document.getElementById('overlay').classList.add('ativo');
+}
+function ocultarOverlay() { document.getElementById('overlay').classList.remove('ativo'); }
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
