@@ -138,9 +138,10 @@
   .regras-box { background:var(--azul); border-radius:var(--radius-lg); padding:1.25rem 1.35rem; margin-bottom:1.25rem; }
   .regras-title { font-family:'Bebas Neue',sans-serif; font-size:1.3rem; color:var(--amarelo); letter-spacing:1.5px; margin-bottom:1rem; display:flex; align-items:center; gap:8px; }
   .regras-lista { list-style:none; display:flex; flex-direction:column; gap:8px; }
-  .regras-lista li { display:flex; align-items:center; gap:10px; font-size:.88rem; color:rgba(255,255,255,.93); line-height:1.4; }
-  .regras-lista li i { font-size:16px; flex-shrink:0; }
-  .regras-lista li strong { color:#ffffff; font-weight:700; white-space:nowrap; }
+  .regras-lista li { display:flex; align-items:flex-start; gap:10px; font-size:.88rem; color:rgba(255,255,255,.93); line-height:1.5; }
+  .regras-lista li i { font-size:15px; flex-shrink:0; margin-top:2px; }
+  .regras-lista li span { flex:1; }
+  .regras-lista li strong { color:#ffdf00; font-weight:700; }
 
   /* PREMIO ACUMULADO */
   .premio-card { background:linear-gradient(135deg,#009c3b,#007a2f); border-radius:var(--radius-lg); padding:1.25rem 1.5rem; margin-bottom:1.25rem; text-align:center; position:relative; overflow:hidden; }
@@ -254,14 +255,14 @@
       Regras do Bolão
     </div>
     <ul class="regras-lista">
-      <li><i class="ti ti-clock" style="color:var(--amarelo)"></i> As apostas encerram <strong>1 hora antes</strong> do início de cada jogo</li>
-      <li><i class="ti ti-receipt" style="color:var(--amarelo)"></i> Comprovante deve ser enviado até <strong>30 min antes</strong> do jogo</li>
-      <li><i class="ti ti-ban" style="color:var(--amarelo)"></i> Palpite enviado <strong>não pode ser alterado</strong></li>
-      <li><i class="ti ti-lock" style="color:var(--amarelo)"></i> Próximos jogos são liberados <strong>após o apito final</strong></li>
-      <li><i class="ti ti-trophy" style="color:var(--amarelo)"></i> Prêmio pago somente com <strong>pagamento confirmado</strong></li>
-      <li><i class="ti ti-users" style="color:var(--amarelo)"></i> Vários acertadores? <strong>Prêmio dividido</strong> igualmente</li>
-      <li><i class="ti ti-arrow-right" style="color:var(--amarelo)"></i> Ninguém acertou? <strong>Prêmio acumula</strong> para o próximo jogo</li>
-      <li><i class="ti ti-ball-football" style="color:var(--amarelo)"></i> Vale apenas os <strong>90 min regulares</strong> — sem prorrogação ou pênaltis</li>
+      <li><i class="ti ti-clock" style="color:var(--amarelo)"></i><span>Apostas encerram <strong>1 hora antes</strong> do jogo</span></li>
+      <li><i class="ti ti-receipt" style="color:var(--amarelo)"></i><span>Comprovante até <strong>30 min antes</strong> do jogo</span></li>
+      <li><i class="ti ti-ban" style="color:var(--amarelo)"></i><span>Palpite <strong>não pode ser alterado</strong> após envio</span></li>
+      <li><i class="ti ti-lock" style="color:var(--amarelo)"></i><span>Próximos jogos liberados <strong>após o apito final</strong></span></li>
+      <li><i class="ti ti-trophy" style="color:var(--amarelo)"></i><span>Prêmio pago somente com <strong>pagamento confirmado</strong></span></li>
+      <li><i class="ti ti-users" style="color:var(--amarelo)"></i><span>Vários acertadores? <strong>Prêmio dividido</strong> igualmente</span></li>
+      <li><i class="ti ti-arrow-right" style="color:var(--amarelo)"></i><span>Ninguém acertou? <strong>Prêmio acumula</strong> pro próximo jogo</span></li>
+      <li><i class="ti ti-ball-football" style="color:var(--amarelo)"></i><span>Vale apenas os <strong>90 min regulares</strong> — sem prorrogação</span></li>
     </ul>
   </div>
 
