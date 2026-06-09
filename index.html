@@ -224,7 +224,7 @@
 
   <div class="hero" style="padding:0;overflow:hidden;background:var(--azul);border-radius:var(--radius-lg);">
     <div style="position:relative;overflow:hidden;height:460px;">
-      <img src="banner.jpg" alt="Bolão Copa 2026" style="width:100%;display:block;object-fit:cover;object-position:center top;">
+      <img src="banner.png" alt="Bolão Copa 2026" style="width:100%;display:block;object-fit:cover;object-position:center top;">
       <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to bottom, transparent, var(--azul));"></div>
     </div>
     <div style="background:var(--azul);padding:.75rem 1.5rem 1.25rem;text-align:center;margin-top:-2px;">
@@ -657,7 +657,7 @@ async function confirmar() {
         '&gol1='      + encodeURIComponent(item.g1) +
         '&gol2='      + encodeURIComponent(item.g2) +
         '&totalPalpites=' + encodeURIComponent(carrinho.length) +
-        '&totalValor='    + encodeURIComponent(PRECO.toFixed(2));
+        '&totalValor='    + encodeURIComponent((carrinho.length * PRECO).toFixed(2));
       // Image beacon — funciona cross-origin
       await new Promise(resolve => {
         const img = new Image();
