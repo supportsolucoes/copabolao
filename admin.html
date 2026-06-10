@@ -106,6 +106,19 @@
   .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%); background:#1a1a2e; color:white; padding:.65rem 1.25rem; border-radius:var(--radius); font-size:.85rem; z-index:1001; opacity:0; transition:opacity .3s; pointer-events:none; }
   .toast.show { opacity:1; }
 
+  /* ESTATÍSTICAS */
+  .estat-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:1rem; }
+  .estat-title { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--azul); letter-spacing:1px; margin-bottom:1rem; display:flex; align-items:center; gap:8px; }
+  .estat-jogo-label { font-size:.72rem; font-weight:600; color:var(--texto-sec); text-transform:uppercase; letter-spacing:.5px; margin-bottom:.6rem; padding-bottom:.35rem; border-bottom:1px solid var(--cinza-borda); }
+  .estat-linha { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .estat-placar { font-family:'Bebas Neue',sans-serif; font-size:1rem; color:var(--azul); background:var(--cinza-bg); border-radius:6px; padding:2px 10px; letter-spacing:1px; min-width:52px; text-align:center; flex-shrink:0; }
+  .estat-barra-wrap { flex:1; background:var(--cinza-bg); border-radius:20px; height:18px; overflow:hidden; }
+  .estat-barra { height:100%; border-radius:20px; background:var(--verde); transition:width .4s; }
+  .estat-barra.top { background:var(--azul); }
+  .estat-count { font-size:.78rem; font-weight:600; color:var(--texto); min-width:24px; text-align:right; flex-shrink:0; }
+  .estat-pct { font-size:.72rem; color:var(--texto-sec); min-width:38px; text-align:right; flex-shrink:0; }
+  .estat-vazio { text-align:center; color:var(--texto-sec); font-size:.85rem; padding:1.5rem; }
+
   @media(max-width:600px) {
     .resumo-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
     .resumo-card-val { font-size:1.4rem; }
@@ -237,7 +250,8 @@ function renderAdmin() {
   const tabs = document.getElementById('tabs');
   tabs.innerHTML = JOGOS.map((j, i) =>
     `<div class="tab ${i===jogoAtivo?'ativo':''}" onclick="trocarJogo(${i})">${j.nome}</div>`
-  ).join('') + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`;
+  ).join('') + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`
+             + `<div class="tab ${jogoAtivo===4?'ativo':''}" onclick="trocarJogo(4)">📊 Estatísticas</div>`;
 
   renderConteudo();
 }
@@ -250,6 +264,7 @@ function trocarJogo(idx) {
 function renderConteudo() {
   const cont = document.getElementById('conteudo-admin');
   if (jogoAtivo === 3) { renderRanking(cont); return; }
+  if (jogoAtivo === 4) { renderEstatisticas(cont); return; }
 
   const jogo    = JOGOS[jogoAtivo];
   const palpites = (dadosAdmin.palpites || [])[jogoAtivo] || { itens: [] };
@@ -367,6 +382,65 @@ async function salvarResultado(jogoIdx) {
   } finally {
     ocultarOverlay();
   }
+}
+
+// ── Estatísticas de palpites ──────────────────────────────────
+function renderEstatisticas(cont) {
+  const todosPalpites = dadosAdmin.palpites || [];
+  let temDados = false;
+
+  const secoes = JOGOS.map((jogo, idx) => {
+    const itens = (todosPalpites[idx] || { itens: [] }).itens;
+    if (itens.length === 0) return `
+      <div style="margin-bottom:1.25rem">
+        <div class="estat-jogo-label">${jogo.nome}</div>
+        <div class="estat-vazio">Nenhum palpite ainda.</div>
+      </div>`;
+
+    temDados = true;
+    const total = itens.length;
+
+    // Contagem por placar
+    const contagem = {};
+    itens.forEach(p => {
+      const k = p.g1 + ' × ' + p.g2;
+      contagem[k] = (contagem[k] || 0) + 1;
+    });
+
+    // Ordenar por quantidade desc
+    const sorted = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+    const maxVal = sorted[0][1];
+
+    const linhas = sorted.map((entry, i) => {
+      const [placar, qtd] = entry;
+      const pct = Math.round((qtd / total) * 100);
+      const largura = Math.round((qtd / maxVal) * 100);
+      return `
+        <div class="estat-linha">
+          <div class="estat-placar">${placar}</div>
+          <div class="estat-barra-wrap">
+            <div class="estat-barra ${i===0?'top':''}" style="width:${largura}%"></div>
+          </div>
+          <div class="estat-count">${qtd}</div>
+          <div class="estat-pct">${pct}%</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="margin-bottom:1.25rem">
+        <div class="estat-jogo-label">${jogo.nome} · ${total} palpite${total!==1?'s':''}</div>
+        ${linhas}
+      </div>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div class="estat-card">
+      <div class="estat-title"><i class="ti ti-chart-bar" style="font-size:18px;color:var(--verde)"></i>Distribuição de Palpites</div>
+      ${!temDados
+        ? '<div class="estat-vazio">Nenhum palpite registrado ainda.</div>'
+        : secoes
+      }
+    </div>`;
 }
 
 // ── Image beacon (cross-origin write) ────────────────────────
