@@ -69,8 +69,8 @@
 
   /* TABELA PALPITES */
   .tabela-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:1rem; }
-  .tabela-header { display:grid; grid-template-columns:1fr 1fr 80px 100px 100px; gap:8px; padding:.65rem 1rem; background:var(--azul); font-size:.75rem; font-weight:600; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; }
-  .tabela-linha { display:grid; grid-template-columns:1fr 1fr 80px 100px 100px; gap:8px; padding:.65rem 1rem; border-bottom:1px solid var(--cinza-borda); font-size:.84rem; align-items:center; }
+  .tabela-header { display:grid; grid-template-columns:1fr 1fr 80px 120px; gap:8px; padding:.65rem 1rem; background:var(--azul); font-size:.75rem; font-weight:600; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; }
+  .tabela-linha { display:grid; grid-template-columns:1fr 1fr 80px 120px; gap:8px; padding:.65rem 1rem; border-bottom:1px solid var(--cinza-borda); font-size:.84rem; align-items:center; }
   .tabela-linha:last-child { border-bottom:none; }
   .tabela-linha:hover { background:var(--cinza-bg); }
   .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:.72rem; font-weight:600; }
@@ -122,7 +122,7 @@
   @media(max-width:600px) {
     .resumo-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
     .resumo-card-val { font-size:1.4rem; }
-    .tabela-header, .tabela-linha { grid-template-columns:1fr 70px 80px; }
+    .tabela-header, .tabela-linha { grid-template-columns:1fr 70px 110px; }
     .tabela-header .col-whats, .tabela-linha .col-whats,
     .tabela-header .col-data, .tabela-linha .col-data { display:none; }
   }
@@ -299,7 +299,6 @@ function renderConteudo() {
         <div>Nome</div>
         <div class="col-whats">WhatsApp</div>
         <div>Palpite</div>
-        <div>Comprovante</div>
         <div>Pagamento</div>
       </div>
       ${palpites.itens.length === 0
@@ -309,7 +308,6 @@ function renderConteudo() {
             <div><strong>${p.nome}</strong><br><span style="font-size:.72rem;color:var(--texto-sec)">${p.codigo}</span></div>
             <div class="col-whats" style="font-size:.78rem;color:var(--texto-sec)">${p.whats}</div>
             <div><span class="placar-badge">${p.g1} × ${p.g2}</span></div>
-            <div><span class="badge badge-${p.comp === 'Pendente' ? 'pendente' : 'confirmado'}">${p.comp}</span></div>
             <div>
               ${String(p.pgto).toLowerCase() === 'sim'
                 ? `<span class="badge badge-confirmado">✅ Confirmado</span>
