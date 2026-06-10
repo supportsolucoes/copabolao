@@ -224,7 +224,7 @@
 
   <div class="hero" style="padding:0;overflow:hidden;background:var(--azul);border-radius:var(--radius-lg);">
     <div style="position:relative;overflow:hidden;height:460px;">
-      <img src="banner.png" alt="Bolão Copa 2026" style="width:100%;display:block;object-fit:cover;object-position:center top;">
+      <img src="banner.jpg" alt="Bolão Copa 2026" style="width:100%;display:block;object-fit:cover;object-position:center top;">
       <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to bottom, transparent, var(--azul));"></div>
     </div>
     <div style="background:var(--azul);padding:.75rem 1.5rem 1.25rem;text-align:center;margin-top:-2px;">
@@ -657,7 +657,7 @@ async function confirmar() {
         '&gol1='      + encodeURIComponent(item.g1) +
         '&gol2='      + encodeURIComponent(item.g2) +
         '&totalPalpites=' + encodeURIComponent(carrinho.length) +
-        '&totalValor='    + encodeURIComponent((carrinho.length * PRECO).toFixed(2));
+        '&totalValor='    + encodeURIComponent(PRECO.toFixed(2));
       // Image beacon — funciona cross-origin
       await new Promise(resolve => {
         const img = new Image();
@@ -861,8 +861,12 @@ function fecharPalpites() {
 const API_KEY  = '52443e9849550f6f279748a5c16ce099';
 const API_URL  = 'https://v3.football.api-sports.io';
 
-// Cache dos fixture IDs — preenchido automaticamente na primeira busca
-var fixtureCache = { 0: null, 1: null, 2: null };
+// IDs dos jogos do Brasil na Copa 2026 — atualizar após sorteio oficial
+const FIXTURE_IDS = {
+  0: null, // Brasil x Marrocos — preencher após sorteio
+  1: null, // Brasil x Haiti
+  2: null, // Escócia x Brasil
+};
 
 const FLAGS_API = {
   'Brazil':   'https://flagcdn.com/w80/br.png',
@@ -871,89 +875,43 @@ const FLAGS_API = {
   'Scotland': 'https://flagcdn.com/w80/gb-sct.png',
 };
 
-// Nomes dos times na API (inglês)
-const JOGOS_API = [
-  { time1: 'Brazil', time2: 'Morocco' },
-  { time1: 'Brazil', time2: 'Haiti'   },
-  { time1: 'Scotland', time2: 'Brazil' },
-];
-
-// Descobre qual jogo está no ar agora (dentro da janela de exibição)
-function jogoEmAndamento() {
-  var agora = new Date();
-  for (var i = 0; i < JOGOS.length; i++) {
-    var j = JOGOS[i];
-    var fimJogo = new Date(j.fechamento.getTime() + 3 * 60 * 60 * 1000);
-    if (agora >= j.fechamento && agora <= fimJogo) return i;
-  }
-  return -1;
-}
-
-// Busca fixture ID pelo nome dos times na data do jogo
-async function resolverFixtureId(jogoIdx) {
-  if (fixtureCache[jogoIdx]) return fixtureCache[jogoIdx];
-  try {
-    var j = JOGOS[jogoIdx];
-    var data_jogo = j.fechamento.toISOString().split('T')[0]; // yyyy-mm-dd
-    var resp = await fetch(API_URL + '/fixtures?team=6&season=2026&league=1', {
-      headers: { 'x-apisports-key': API_KEY }
-    });
-    var data = await resp.json();
-    if (!data.response) return null;
-    var nomes = JOGOS_API[jogoIdx];
-    var match = data.response.find(function(f) {
-      var h = f.teams.home.name;
-      var a = f.teams.away.name;
-      return (h === nomes.time1 && a === nomes.time2) ||
-             (h === nomes.time2 && a === nomes.time1);
-    });
-    if (match) {
-      fixtureCache[jogoIdx] = match.fixture.id;
-      return match.fixture.id;
-    }
-  } catch(e) {}
-  return null;
-}
-
 async function buscarPlacarAoVivo() {
-  var idx = jogoEmAndamento();
+  // Descobre qual jogo do Brasil pode estar acontecendo agora
+  const agora = new Date();
+  let fixtureId = null;
+  let jogoIdx   = -1;
 
-  // Fora da janela de qualquer jogo — tenta ao vivo direto (fallback)
-  if (idx === -1) {
-    try {
-      var resp = await fetch(API_URL + '/fixtures?live=all&team=6', {
-        headers: { 'x-apisports-key': API_KEY }
-      });
-      var data = await resp.json();
-      if (data.response && data.response.length > 0) {
-        mostrarPlacar(data.response[0], true);
-      }
-    } catch(e) {}
-    return;
+  for (let i = 0; i < JOGOS.length; i++) {
+    const j = JOGOS[i];
+    const inicio  = j.fechamento; // fechamento = 1h antes do jogo = hora do jogo - 1h
+    const fimJogo = new Date(j.fechamento.getTime() + 3 * 60 * 60 * 1000); // +3h após fechamento
+    if (agora >= j.fechamento && agora <= fimJogo) {
+      fixtureId = FIXTURE_IDS[i];
+      jogoIdx   = i;
+      break;
+    }
   }
-
-  // Resolve o fixture ID automaticamente se ainda não tiver em cache
-  var fixtureId = await resolverFixtureId(idx);
 
   if (!fixtureId) {
-    // Fallback: busca ao vivo pelo time Brasil
+    // Busca por jogos ao vivo do Brasil (time ID = 6, Copa do Mundo = league 1)
     try {
-      var resp = await fetch(API_URL + '/fixtures?live=all&team=6', {
+      const resp = await fetch(`${API_URL}/fixtures?live=all&team=6`, {
         headers: { 'x-apisports-key': API_KEY }
       });
-      var data = await resp.json();
+      const data = await resp.json();
       if (data.response && data.response.length > 0) {
-        mostrarPlacar(data.response[0], true);
+        const fixture = data.response[0];
+        mostrarPlacar(fixture, true);
       }
     } catch(e) {}
     return;
   }
 
   try {
-    var resp = await fetch(API_URL + '/fixtures?id=' + fixtureId, {
+    const resp = await fetch(`${API_URL}/fixtures?id=${fixtureId}`, {
       headers: { 'x-apisports-key': API_KEY }
     });
-    var data = await resp.json();
+    const data = await resp.json();
     if (data.response && data.response.length > 0) {
       mostrarPlacar(data.response[0], true);
     }
