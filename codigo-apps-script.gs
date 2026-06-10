@@ -31,7 +31,6 @@ function cabecalhoJogo(jogo) {
 function inicializarPlanilha() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
 
-  // Abas dos jogos
   for (var i = 0; i < JOGOS.length; i++) {
     var jogo = JOGOS[i];
     var cab  = cabecalhoJogo(jogo);
@@ -44,7 +43,6 @@ function inicializarPlanilha() {
     aba.setColumnWidths(1, cab.length, 150);
   }
 
-  // Aba Resultados
   var abaRes = ss.getSheetByName('Resultados');
   if (!abaRes) abaRes = ss.insertSheet('Resultados');
   if (abaRes.getLastRow() === 0) {
@@ -52,13 +50,12 @@ function inicializarPlanilha() {
     abaRes.getRange(1, 1, 1, 6).setValues(cabRes)
       .setBackground('#009c3b').setFontColor('#ffffff').setFontWeight('bold');
     abaRes.setColumnWidths(1, 6, 160);
-    // Linhas iniciais para cada jogo
     abaRes.appendRow(['Brasil x Marrocos', 'Brasil', '', '', 'Marrocos', '']);
     abaRes.appendRow(['Brasil x Haiti',    'Brasil', '', '', 'Haiti',    '']);
     abaRes.appendRow(['Escocia x Brasil',  'Escocia','', '', 'Brasil',   '']);
   }
 
-  SpreadsheetApp.getUi().alert('Planilha inicializada! Preencha os resultados na aba "Resultados" após cada jogo.');
+  SpreadsheetApp.getUi().alert('Planilha inicializada!');
 }
 
 // ── GET — roteador principal ──────────────────────────────────
@@ -76,7 +73,7 @@ function doGet(e) {
   return resposta({ status: 'online', bolao: 'Copa 2026' });
 }
 
-// ── Salva palpite e atualiza prêmio ──────────────────────────
+// ── Salva palpite ─────────────────────────────────────────────
 function salvarPalpite(p) {
   try {
     var ss      = SpreadsheetApp.openById(SHEET_ID);
@@ -104,7 +101,7 @@ function salvarPalpite(p) {
       p.gol1 !== undefined ? parseInt(p.gol1) : '',
       p.gol2 !== undefined ? parseInt(p.gol2) : '',
       p.totalPalpites || 1,
-      p.totalValor || PRECO_UNIT,
+      PRECO_UNIT,   // FIX: sempre grava R$5,00 fixo, ignora o que vem do frontend
       'Pendente',
       'Nao',
       ''
@@ -114,7 +111,6 @@ function salvarPalpite(p) {
     aba.getRange(ul, 1, 1, cab.length)
        .setBackground(ul % 2 === 0 ? '#f0f4ff' : '#ffffff');
 
-    // Atualiza prêmio acumulado automaticamente
     atualizarPremioAcumulado(ss);
 
     return resposta({ mensagem: 'Palpite registrado!' });
@@ -123,51 +119,42 @@ function salvarPalpite(p) {
   }
 }
 
-// ── Soma coluna I de todos os jogos e grava na aba Resultados ─
+// ── Conta linhas × R$5,00 (ignora valor gravado na coluna) ────
+function contarPremio(ss) {
+  var total = 0;
+  var qtd   = 0;
+  for (var i = 0; i < JOGOS.length; i++) {
+    var aba = ss.getSheetByName(JOGOS[i].aba);
+    if (!aba || aba.getLastRow() < 2) continue;
+    qtd += aba.getLastRow() - 1;
+  }
+  total = qtd * PRECO_UNIT;
+  return { total: total, qtd: qtd };
+}
+
+// ── Atualiza prêmio acumulado na aba Resultados ───────────────
 function atualizarPremioAcumulado(ss) {
   try {
-    var total = 0;
-    for (var i = 0; i < JOGOS.length; i++) {
-      var aba = ss.getSheetByName(JOGOS[i].aba);
-      if (!aba || aba.getLastRow() < 2) continue;
-      var vals = aba.getRange(2, 9, aba.getLastRow() - 1, 1).getValues();
-      for (var r = 0; r < vals.length; r++) {
-        var v = parseFloat(vals[r][0]);
-        if (!isNaN(v)) total += v;
-      }
-    }
-
-    // Grava o total acumulado em todas as linhas da aba Resultados (coluna F)
+    var res    = contarPremio(ss);
     var abaRes = ss.getSheetByName('Resultados');
     if (!abaRes || abaRes.getLastRow() < 2) return;
     var numLinhas = abaRes.getLastRow() - 1;
     for (var li = 0; li < numLinhas; li++) {
-      abaRes.getRange(li + 2, 6).setValue('R$ ' + total.toFixed(2).replace('.', ','));
+      abaRes.getRange(li + 2, 6).setValue('R$ ' + res.total.toFixed(2).replace('.', ','));
     }
   } catch (err) {
     console.error('Erro ao atualizar premio: ' + err.message);
   }
 }
 
-// ── Dashboard: prêmio acumulado + ranking ─────────────────────
+// ── Dashboard ─────────────────────────────────────────────────
 function getDashboard() {
   try {
-    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var ss  = SpreadsheetApp.openById(SHEET_ID);
+    var res = contarPremio(ss);  // FIX: usa contagem de linhas, não soma da coluna
+    var totalPremio   = res.total;
+    var totalPalpites = res.qtd;
 
-    // ── 1. Prêmio acumulado: soma coluna I (índice 8) de todos os jogos ──
-    var totalPremio = 0;
-    var totalPalpites = 0;
-    for (var i = 0; i < JOGOS.length; i++) {
-      var aba = ss.getSheetByName(JOGOS[i].aba);
-      if (!aba || aba.getLastRow() < 2) continue;
-      var vals = aba.getRange(2, 9, aba.getLastRow() - 1, 1).getValues();
-      for (var r = 0; r < vals.length; r++) {
-        var v = parseFloat(vals[r][0]);
-        if (!isNaN(v)) { totalPremio += v; totalPalpites++; }
-      }
-    }
-
-    // ── 2. Resultados + ranking por jogo ─────────────────────
     var abaRes = ss.getSheetByName('Resultados');
     var ranking = [];
 
@@ -175,16 +162,13 @@ function getDashboard() {
       var resData = abaRes.getRange(2, 1, abaRes.getLastRow() - 1, 6).getValues();
 
       for (var ri = 0; ri < resData.length; ri++) {
-        var linha   = resData[ri];
+        var linha    = resData[ri];
         var nomeJogo = (linha[0] || '').toString().trim();
         var g1Real   = linha[2] !== '' ? parseInt(linha[2]) : null;
         var g2Real   = linha[3] !== '' ? parseInt(linha[3]) : null;
-        var premio   = linha[5] !== '' ? parseFloat(linha[5]) : null;
 
-        // Só processa jogo com resultado preenchido
         if (g1Real === null || g2Real === null || isNaN(g1Real) || isNaN(g2Real)) continue;
 
-        // Busca palpites do jogo correspondente
         var jogoRef = null;
         for (var ji = 0; ji < JOGOS.length; ji++) {
           if (JOGOS[ji].nome === nomeJogo) { jogoRef = JOGOS[ji]; break; }
@@ -194,13 +178,13 @@ function getDashboard() {
         var abaJogo = ss.getSheetByName(jogoRef.aba);
         if (!abaJogo || abaJogo.getLastRow() < 2) continue;
 
-        var palpites = abaJogo.getRange(2, 1, abaJogo.getLastRow() - 1, 12).getValues();
+        var palpites  = abaJogo.getRange(2, 1, abaJogo.getLastRow() - 1, 12).getValues();
         var acertaram = [];
 
         for (var pi = 0; pi < palpites.length; pi++) {
-          var pal = palpites[pi];
+          var pal  = palpites[pi];
           var pgto = (pal[10] || '').toString().toLowerCase();
-          if (pgto !== 'sim') continue; // só conta quem pagou
+          if (pgto !== 'sim') continue;
           var p1 = parseInt(pal[5]);
           var p2 = parseInt(pal[6]);
           if (p1 === g1Real && p2 === g2Real) {
@@ -212,7 +196,7 @@ function getDashboard() {
           jogo:      nomeJogo,
           resultado: g1Real + ' x ' + g2Real,
           acertaram: acertaram,
-          premio:    totalPremio  // usa o total acumulado de todos os jogos
+          premio:    totalPremio
         });
       }
     }
@@ -229,7 +213,7 @@ function getDashboard() {
   }
 }
 
-// ── Retorna palpites públicos (só nome e placar) ──────────────
+// ── Palpites públicos ─────────────────────────────────────────
 function getPalpites() {
   try {
     var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -261,7 +245,7 @@ function getPalpitesDados(ss) {
   return resultado;
 }
 
-// ── Página HTML com palpites (sem CORS) ───────────────────────
+// ── Página HTML palpites (sem CORS) ───────────────────────────
 function getPaginaPalpites() {
   var ss   = SpreadsheetApp.openById(SHEET_ID);
   var data = getPalpitesDados(ss);
@@ -285,7 +269,7 @@ function getPaginaPalpites() {
     '<style>' +
     '*{box-sizing:border-box;margin:0;padding:0}' +
     'body{font-family:Arial,sans-serif;background:#f5f6fa;padding:1rem}' +
-    'h2{font-size:1.2rem;color:#002776;margin-bottom:1rem;display:flex;align-items:center;gap:8px}' +
+    'h2{font-size:1.2rem;color:#002776;margin-bottom:1rem}' +
     '.tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}' +
     '.tab{padding:6px 12px;border:none;border-radius:8px;background:#e0e3ee;color:#6b7280;font-size:.82rem;font-weight:600;cursor:pointer}' +
     '.tab.ativo{background:#002776;color:white}' +
@@ -305,7 +289,8 @@ function getPaginaPalpites() {
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
-// ── Dados completos para o painel admin ──────────────────────
+
+// ── Admin ─────────────────────────────────────────────────────
 function getDadosAdmin() {
   try {
     var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -320,8 +305,7 @@ function getDadosAdmin() {
         var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 12).getValues();
         for (var r = 0; r < dados.length; r++) {
           var linha = dados[r];
-          var val = parseFloat(linha[8]);
-          if (!isNaN(val)) totalPremio += val;
+          totalPremio += PRECO_UNIT;  // FIX: sempre R$5,00 por linha
           totalPalpites++;
           var pgto = (linha[10] || '').toString().toLowerCase();
           if (pgto !== 'sim') totalPendentes++;
@@ -366,10 +350,10 @@ function getDadosAdmin() {
 // ── Confirmar pagamento ───────────────────────────────────────
 function confirmarPagamento(p) {
   try {
-    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var ss   = SpreadsheetApp.openById(SHEET_ID);
     var jogo = JOGOS[parseInt(p.jogoIndex)];
     var status = (p.status || 'nao').toLowerCase() === 'sim' ? 'Sim' : 'Nao';
-    var aba = ss.getSheetByName(jogo.aba);
+    var aba  = ss.getSheetByName(jogo.aba);
     if (!aba) return falha('Aba não encontrada');
     var dados = aba.getRange(2, 1, aba.getLastRow() - 1, 1).getValues();
     for (var r = 0; r < dados.length; r++) {
@@ -385,9 +369,9 @@ function confirmarPagamento(p) {
 // ── Salvar resultado ──────────────────────────────────────────
 function salvarResultado(p) {
   try {
-    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var ss      = SpreadsheetApp.openById(SHEET_ID);
     var jogoIdx = parseInt(p.jogoIndex);
-    var abaRes = ss.getSheetByName('Resultados');
+    var abaRes  = ss.getSheetByName('Resultados');
     if (!abaRes) return falha('Aba Resultados não encontrada');
     abaRes.getRange(jogoIdx + 2, 3).setValue(parseInt(p.g1));
     abaRes.getRange(jogoIdx + 2, 4).setValue(parseInt(p.g2));
