@@ -271,8 +271,8 @@ function renderConteudo() {
   const resultado = (dadosAdmin.resultados || [])[jogoAtivo] || {};
 
   // Confirmados e pendentes
-  const confirmados = palpites.itens.filter(p => p.pgto === 'sim').length;
-  const pendentes   = palpites.itens.filter(p => p.pgto !== 'sim').length;
+  const confirmados = palpites.itens.filter(p => String(p.pgto).toLowerCase() === 'sim').length;
+  const pendentes   = palpites.itens.filter(p => String(p.pgto).toLowerCase() !== 'sim').length;
 
   cont.innerHTML = `
     <!-- LANÇAR RESULTADO -->
@@ -311,7 +311,7 @@ function renderConteudo() {
             <div><span class="placar-badge">${p.g1} × ${p.g2}</span></div>
             <div><span class="badge badge-${p.comp === 'Pendente' ? 'pendente' : 'confirmado'}">${p.comp}</span></div>
             <div>
-              ${p.pgto === 'sim'
+              ${String(p.pgto).toLowerCase() === 'sim'
                 ? `<span class="badge badge-confirmado">✅ Confirmado</span>
                    <button class="btn-estornar" onclick="alterarPgto(${jogoAtivo},${i},'nao')" style="margin-top:3px">Estornar</button>`
                 : `<button class="btn-confirmar-pgto" onclick="alterarPgto(${jogoAtivo},${i},'sim')">✅ Confirmar</button>`
