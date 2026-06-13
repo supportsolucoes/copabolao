@@ -65,6 +65,11 @@
   .res-sep { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; color:var(--texto-sec); }
   .btn-salvar-resultado { background:var(--verde); color:white; border:none; border-radius:var(--radius); padding:.7rem 1.5rem; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; gap:6px; }
   .btn-salvar-resultado:hover { opacity:.9; }
+  .btn-encerrar { background:#dc2626; color:white; border:none; border-radius:var(--radius); padding:.7rem 1.5rem; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .btn-encerrar:hover { opacity:.9; }
+  .status-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:.78rem; font-weight:600; margin-top:.5rem; }
+  .status-parcial { background:#fff8e1; color:#7a5800; border:1px solid #f5c842; }
+  .status-final { background:#f0fdf4; color:#15803d; border:1px solid #86efac; }
   .resultado-atual { font-size:.82rem; color:var(--texto-sec); margin-top:.5rem; }
 
   /* TABELA PALPITES */
@@ -287,10 +292,21 @@ function renderConteudo() {
         </div>
         <div class="resultado-time">${jogo.time2}</div>
       </div>
-      ${resultado.g1 !== undefined ? `<div class="resultado-atual">✅ Resultado atual: <strong>${resultado.g1} × ${resultado.g2}</strong></div>` : ''}
-      <button class="btn-salvar-resultado" onclick="salvarResultado(${jogoAtivo})">
-        <i class="ti ti-device-floppy" style="font-size:16px"></i> SALVAR RESULTADO
-      </button>
+      ${resultado.g1 !== undefined ? `
+        <div class="resultado-atual">
+          Placar: <strong>${resultado.g1} × ${resultado.g2}</strong>
+          <span class="status-badge ${resultado.status === 'final' ? 'status-final' : 'status-parcial'}">
+            ${resultado.status === 'final' ? '✅ Encerrado' : '⚽ Em andamento'}
+          </span>
+        </div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.5rem">
+        <button class="btn-salvar-resultado" onclick="salvarResultado(${jogoAtivo}, 'parcial')">
+          <i class="ti ti-device-floppy" style="font-size:16px"></i> SALVAR PARCIAL
+        </button>
+        <button class="btn-encerrar" onclick="salvarResultado(${jogoAtivo}, 'final')">
+          <i class="ti ti-flag" style="font-size:16px"></i> ENCERRAR JOGO
+        </button>
+      </div>
     </div>
 
     <!-- PALPITES -->
@@ -387,17 +403,18 @@ async function alterarPgto(jogoIdx, itemIdx, status) {
 }
 
 // ── Salvar resultado ──────────────────────────────────────────
-async function salvarResultado(jogoIdx) {
+async function salvarResultado(jogoIdx, status) {
   const g1 = document.getElementById(`res1-${jogoIdx}`).value;
   const g2 = document.getElementById(`res2-${jogoIdx}`).value;
   if (g1 === '' || g2 === '') { toast('⚽ Preencha o placar antes de salvar.'); return; }
-  mostrarOverlay('Salvando resultado...');
+  const label = status === 'final' ? 'Encerrando jogo...' : 'Salvando parcial...';
+  mostrarOverlay(label);
   try {
-    await enviarBeacon(`action=resultado&jogoIndex=${jogoIdx}&g1=${g1}&g2=${g2}`);
+    await enviarBeacon(`action=resultado&jogoIndex=${jogoIdx}&g1=${g1}&g2=${g2}&status=${status}`);
     if (!dadosAdmin.resultados) dadosAdmin.resultados = [];
-    dadosAdmin.resultados[jogoIdx] = { g1: parseInt(g1), g2: parseInt(g2) };
+    dadosAdmin.resultados[jogoIdx] = { g1: parseInt(g1), g2: parseInt(g2), status: status };
     await carregarDados();
-    toast('✅ Resultado salvo e ranking atualizado!');
+    toast(status === 'final' ? '🏁 Jogo encerrado!' : '✅ Parcial salvo!');
   } catch(err) {
     toast('❌ Erro: ' + err.message);
   } finally {

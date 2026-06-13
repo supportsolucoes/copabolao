@@ -878,10 +878,13 @@ function renderPalpitesJogos(data) {
 
       // Placar ao vivo ou resultado
       if (temResultado) {
-        html += `<div style="background:var(--azul);border-radius:var(--radius);padding:.6rem 1rem;margin-bottom:.65rem;text-align:center;">
-          <div style="font-size:.68rem;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">✅ Resultado final</div>
+        const isFinal = res.status === 'final';
+        const bgColor = isFinal ? 'var(--azul)' : '#f59e0b';
+        const label   = isFinal ? '✅ Resultado Final' : '⚽ Parcial — Jogo em andamento';
+        html += `<div style="background:${bgColor};border-radius:var(--radius);padding:.6rem 1rem;margin-bottom:.65rem;text-align:center;">
+          <div style="font-size:.68rem;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">${label}</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--amarelo);letter-spacing:3px">${res.g1} × ${res.g2}</div>
-          ${qtdAcertou > 0 ? `<div style="font-size:.72rem;color:#86efac;margin-top:2px">${qtdAcertou} pessoa(s) acertou!</div>` : ''}
+          ${isFinal && qtdAcertou > 0 ? `<div style="font-size:.72rem;color:#f0fdf4;margin-top:2px">${qtdAcertou} pessoa(s) acertou!</div>` : ''}
         </div>`;
       } else if (refG1 !== null) {
         html += `<div style="background:#dc2626;border-radius:var(--radius);padding:.6rem 1rem;margin-bottom:.65rem;text-align:center;">
