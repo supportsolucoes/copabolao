@@ -847,7 +847,10 @@ function renderPalpitesJogos(data) {
 
     // Ranking info para este jogo — usa posição no array
     const rankingJogo = (ranking && ranking[i]) ? ranking[i] : null;
-    const acertaram = rankingJogo ? (rankingJogo.acertaram || []) : [];
+    // Conta acertadores direto dos palpites (independente de pagamento)
+    const qtdAcertou = temResultado
+      ? itens.filter(p => parseInt(p.g1) === parseInt(res.g1) && parseInt(p.g2) === parseInt(res.g2)).length
+      : 0;
 
     html += `<div class="pj-card">`;
     html += `<div class="pj-title">
@@ -878,7 +881,7 @@ function renderPalpitesJogos(data) {
         html += `<div style="background:var(--azul);border-radius:var(--radius);padding:.6rem 1rem;margin-bottom:.65rem;text-align:center;">
           <div style="font-size:.68rem;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">✅ Resultado final</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--amarelo);letter-spacing:3px">${res.g1} × ${res.g2}</div>
-          ${acertaram.length > 0 ? `<div style="font-size:.72rem;color:#86efac;margin-top:2px">${acertaram.length} pessoa(s) acertou!</div>` : ''}
+          ${qtdAcertou > 0 ? `<div style="font-size:.72rem;color:#86efac;margin-top:2px">${qtdAcertou} pessoa(s) acertou!</div>` : ''}
         </div>`;
       } else if (refG1 !== null) {
         html += `<div style="background:#dc2626;border-radius:var(--radius);padding:.6rem 1rem;margin-bottom:.65rem;text-align:center;">
