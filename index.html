@@ -226,7 +226,9 @@
   .pj-placar { font-family:'Bebas Neue',sans-serif; font-size:1rem; color:var(--azul); letter-spacing:1.5px; background:white; border:1px solid var(--cinza-borda); border-radius:6px; padding:1px 9px; }
   .pj-item.ganhando .pj-placar { background:#dcfce7; border-color:#86efac; }
   .pj-ganhando-label { font-size:.65rem; font-weight:700; color:var(--verde); margin-left:6px; }
-  .pj-resultado-box { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; background:var(--azul); border-radius:var(--radius); padding:.6rem 1rem; margin-bottom:.65rem; text-align:center; }
+  .pj-resultado-box { background:#dc2626; border-radius:var(--radius); padding:.75rem 1rem; margin-bottom:.65rem; text-align:center; }
+  .pj-resultado-lbl { display:block; font-size:.7rem; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+  .pj-resultado-txt { display:block; font-family:'Bebas Neue',sans-serif; font-size:2rem; color:var(--amarelo); letter-spacing:3px; line-height:1; }
   .pj-resultado-txt { font-family:'Bebas Neue',sans-serif; font-size:1.3rem; color:var(--amarelo); letter-spacing:2px; }
   .pj-resultado-lbl { font-size:.7rem; color:rgba(255,255,255,.7); }
 
@@ -870,10 +872,10 @@ function renderPalpitesJogos(data) {
 
       // Placar ao vivo ou resultado
       if (temResultado) {
-        html += `<div class="pj-resultado-box">
-          <span class="pj-resultado-lbl">Resultado final</span>
+        html += `<div class="pj-resultado-box" style="background:var(--azul)">
+          <span class="pj-resultado-lbl">✅ Resultado final</span>
           <span class="pj-resultado-txt">${res.g1} × ${res.g2}</span>
-          ${acertaram.length > 0 ? `<span style="font-size:.72rem;color:#86efac">${acertaram.length} acertou!</span>` : ''}
+          ${acertaram.length > 0 ? `<span style="display:block;font-size:.72rem;color:#86efac;margin-top:4px">${acertaram.length} pessoa(s) acertou!</span>` : ''}
         </div>`;
       } else if (i === 0 && liveVisivel && !isNaN(liveG1) && !isNaN(liveG2)) {
         html += `<div class="pj-resultado-box" style="background:#dc2626">
