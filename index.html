@@ -891,7 +891,12 @@ function renderPalpitesJogos(data) {
         html += `<div class="pj-contagem" style="color:var(--texto-sec)">Nenhuma aposta registrada.</div>`;
       } else {
         html += `<div class="pj-lista">`;
-        itens.forEach(p => {
+        const ordenados = itens.slice().sort((a, b) => {
+          const aG = refG1 !== null && parseInt(a.g1) === refG1 && parseInt(a.g2) === refG2;
+          const bG = refG1 !== null && parseInt(b.g1) === refG1 && parseInt(b.g2) === refG2;
+          return (bG ? 1 : 0) - (aG ? 1 : 0);
+        });
+        ordenados.forEach(p => {
           const ganhando = refG1 !== null && parseInt(p.g1) === refG1 && parseInt(p.g2) === refG2;
           const perdendo = refG1 !== null && !ganhando;
           html += `<div class="pj-item ${ganhando ? 'ganhando' : perdendo ? 'perdendo' : ''}">
