@@ -221,10 +221,10 @@
   .pj-lista { display:flex; flex-direction:column; gap:5px; }
   .pj-item { display:flex; align-items:center; justify-content:space-between; padding:.55rem .85rem; border-radius:var(--radius); background:var(--cinza-bg); border:1px solid var(--cinza-borda); font-size:.84rem; transition:all .15s; }
   .pj-item.ganhando { background:#f0fdf4; border-color:#86efac; }
-  .pj-item.ganhando .pj-placar { color:var(--verde); }
+  .pj-item.perdendo { opacity:.35; }
   .pj-nome { flex:1; font-weight:500; color:var(--texto); }
   .pj-placar { font-family:'Bebas Neue',sans-serif; font-size:1rem; color:var(--azul); letter-spacing:1.5px; background:white; border:1px solid var(--cinza-borda); border-radius:6px; padding:1px 9px; }
-  .pj-item.ganhando .pj-placar { background:#dcfce7; border-color:#86efac; }
+  .pj-item.ganhando .pj-placar { color:var(--verde); background:#dcfce7; border-color:#86efac; }
   .pj-ganhando-label { font-size:.65rem; font-weight:700; color:var(--verde); margin-left:6px; }
   .pj-resultado-box { background:#dc2626; border-radius:var(--radius); padding:.75rem 1rem; margin-bottom:.65rem; text-align:center; display:block !important; }
   .pj-resultado-lbl { display:block !important; width:100%; font-size:.7rem; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; font-family:'Barlow',sans-serif; }
@@ -878,10 +878,7 @@ function renderPalpitesJogos(data) {
           ${acertaram.length > 0 ? `<span style="display:block;font-size:.72rem;color:#86efac;margin-top:4px">${acertaram.length} pessoa(s) acertou!</span>` : ''}
         </div>`;
       } else if (i === 0 && liveVisivel && !isNaN(liveG1) && !isNaN(liveG2)) {
-        html += `<div class="pj-resultado-box" style="background:#dc2626">
-          <span class="pj-resultado-lbl">⚽ Placar ao vivo</span>
-          <span class="pj-resultado-txt">${liveG1} × ${liveG2}</span>
-        </div>`;
+        // Sem box — o highlight nas linhas já comunica
       }
 
       if (total === 0) {
@@ -890,9 +887,10 @@ function renderPalpitesJogos(data) {
         html += `<div class="pj-lista">`;
         itens.forEach(p => {
           const ganhando = refG1 !== null && parseInt(p.g1) === refG1 && parseInt(p.g2) === refG2;
-          html += `<div class="pj-item ${ganhando ? 'ganhando' : ''}">
+          const perdendo = refG1 !== null && !ganhando;
+          html += `<div class="pj-item ${ganhando ? 'ganhando' : perdendo ? 'perdendo' : ''}">
             <span class="pj-nome">${p.nome}</span>
-            ${ganhando ? '<span class="pj-ganhando-label">✅ na frente!</span>' : ''}
+            ${ganhando ? '<span class="pj-ganhando-label">✅</span>' : ''}
             <span class="pj-placar">${p.g1} × ${p.g2}</span>
           </div>`;
         });
