@@ -325,24 +325,47 @@ function renderConteudo() {
 }
 
 function renderRanking(cont) {
-  const ranking = dadosAdmin.ranking || [];
-  if (ranking.length === 0) {
+  const resultados = dadosAdmin.resultados || [];
+  const palpites   = dadosAdmin.palpites   || [];
+  const temResultado = resultados.some(r => r && r.g1 !== undefined);
+  if (!temResultado) {
     cont.innerHTML = `<div class="ranking-card"><div class="ranking-vazio">Nenhum resultado lançado ainda.</div></div>`;
     return;
   }
-
-  cont.innerHTML = ranking.map(jogo => {
-    const itens = (jogo.acertaram || []).length === 0
-      ? `<div class="ranking-vazio">Ninguém acertou — prêmio acumula!</div>`
-      : jogo.acertaram.map((a, i) => `
-          <div class="ranking-item">
-            <div class="ranking-pos">${['🥇','🥈','🥉'][i] || (i+1)}</div>
-            <div><div class="ranking-nome">${a.nome}</div><div class="ranking-placar">Palpite: ${a.p1} × ${a.p2}</div></div>
-          </div>`).join('');
+  cont.innerHTML = JOGOS.map((jogo, i) => {
+    const res = resultados[i];
+    if (!res || res.g1 === undefined) return '';
+    const itens = (palpites[i] && palpites[i].itens) ? palpites[i].itens : [];
+    if (itens.length === 0) return `
+      <div class="ranking-card">
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.nome} · ${res.g1} × ${res.g2}</div>
+        <div class="ranking-vazio">Nenhum palpite registrado.</div>
+      </div>`;
+    const ordenados = itens.slice().sort((a, b) => {
+      const aG = parseInt(a.g1) === res.g1 && parseInt(a.g2) === res.g2;
+      const bG = parseInt(b.g1) === res.g1 && parseInt(b.g2) === res.g2;
+      return (bG ? 1 : 0) - (aG ? 1 : 0);
+    });
+    const linhas = ordenados.map((p, idx) => {
+      const acertou = parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2;
+      const pgtoOk  = p.pgto === 'sim';
+      return `<div class="ranking-item" style="${acertou ? 'background:#f0fdf4;border:1px solid #86efac' : ''}">
+        <div class="ranking-pos" style="color:${acertou ? 'var(--verde)' : 'var(--texto-sec)'}">${acertou ? '✅' : (idx+1)}</div>
+        <div style="flex:1">
+          <div class="ranking-nome">${p.nome}</div>
+          <div class="ranking-placar">Palpite: ${p.g1} × ${p.g2} · ${pgtoOk ? '<span style="color:var(--verde)">Pgto ✅</span>' : '<span style="color:var(--laranja)">Pgto ⏳</span>'}</div>
+        </div>
+        ${acertou ? '<div style="font-size:.72rem;font-weight:700;color:var(--verde)">ACERTOU!</div>' : ''}
+      </div>`;
+    }).join('');
+    const qtdAcertou = ordenados.filter(p => parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2).length;
     return `
       <div class="ranking-card">
-        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.jogo} · ${jogo.resultado}</div>
-        ${itens}
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.nome} · ${res.g1} × ${res.g2}
+          <span style="font-size:.75rem;font-family:Barlow,sans-serif;font-weight:400;color:var(--texto-sec);margin-left:8px">${qtdAcertou} acertou · ${itens.length} total</span>
+        </div>
+        ${qtdAcertou === 0 ? '<div class="ranking-vazio" style="margin-bottom:.5rem">Ninguém acertou — prêmio acumula!</div>' : ''}
+        ${linhas}
       </div>`;
   }).join('');
 }
