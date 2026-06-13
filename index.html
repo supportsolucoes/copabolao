@@ -796,6 +796,8 @@ async function carregarDashboard() {
     // Cache dos palpites para o modal
     if (data.palpites) dadosPalpites = data.palpites;
     window._dashData = data;
+    console.log('Dashboard resultados:', JSON.stringify(data.resultados));
+    console.log('Dashboard ranking:', JSON.stringify(data.ranking));
 
     // Palpites por jogo
     renderPalpitesJogos(data);
