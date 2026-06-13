@@ -975,15 +975,13 @@ const FLAGS_API = {
 };
 
 async function buscarPlacarAoVivo() {
-  // Descobre qual jogo do Brasil pode estar acontecendo agora
   const agora = new Date();
   let fixtureId = null;
   let jogoIdx   = -1;
 
   for (let i = 0; i < JOGOS.length; i++) {
     const j = JOGOS[i];
-    const inicio  = j.fechamento; // fechamento = 1h antes do jogo = hora do jogo - 1h
-    const fimJogo = new Date(j.fechamento.getTime() + 3 * 60 * 60 * 1000); // +3h após fechamento
+    const fimJogo = new Date(j.fechamento.getTime() + 3 * 60 * 60 * 1000);
     if (agora >= j.fechamento && agora <= fimJogo) {
       fixtureId = FIXTURE_IDS[i];
       jogoIdx   = i;
@@ -991,8 +989,8 @@ async function buscarPlacarAoVivo() {
     }
   }
 
+  // Se não tem ID fixo, busca ao vivo
   if (!fixtureId) {
-    // Busca por jogos ao vivo do Brasil (time ID = 6, Copa do Mundo = league 1)
     try {
       const resp = await fetch(`${API_URL}/fixtures?live=all&team=6`, {
         headers: { 'x-apisports-key': API_KEY }
@@ -1000,9 +998,13 @@ async function buscarPlacarAoVivo() {
       const data = await resp.json();
       if (data.response && data.response.length > 0) {
         const fixture = data.response[0];
+        console.log('🔴 JOGO AO VIVO encontrado! ID:', fixture.fixture.id,
+          '|', fixture.teams.home.name, 'x', fixture.teams.away.name,
+          '| Status:', fixture.fixture.status.short);
         mostrarPlacar(fixture, true);
+        if (window._dashData) renderPalpitesJogos(window._dashData);
       }
-    } catch(e) {}
+    } catch(e) { console.log('Erro ao buscar ao vivo:', e); }
     return;
   }
 
@@ -1059,6 +1061,27 @@ function mostrarPlacar(fixture, mostrar) {
 }
 
 // Busca a cada 60 segundos durante jogos
+// Busca IDs dos fixtures do Brasil na Copa 2026
+async function buscarFixtureIDs() {
+  const datas = ['2026-06-13', '2026-06-19', '2026-06-24'];
+  for (let i = 0; i < datas.length; i++) {
+    try {
+      const resp = await fetch(`${API_URL}/fixtures?team=6&date=${datas[i]}`, {
+        headers: { 'x-apisports-key': API_KEY }
+      });
+      const data = await resp.json();
+      if (data.response && data.response.length > 0) {
+        data.response.forEach(f => {
+          console.log(`📅 Jogo ${i} (${datas[i]}): ID=${f.fixture.id} | ${f.teams.home.name} x ${f.teams.away.name} | Liga: ${f.league.name}`);
+        });
+      } else {
+        console.log(`📅 Jogo ${i} (${datas[i]}): nenhum resultado`);
+      }
+    } catch(e) { console.log(`Erro jogo ${i}:`, e); }
+  }
+}
+
+buscarFixtureIDs();
 buscarPlacarAoVivo();
 setInterval(buscarPlacarAoVivo, 60000);
 
