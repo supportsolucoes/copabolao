@@ -812,11 +812,12 @@ function renderPalpitesJogos(data) {
   const resultados = data.resultados || [];
   const ranking = data.ranking || [];
 
-  // Pegar placar ao vivo atual (se existir na tela)
-  const liveG1 = parseInt(document.getElementById('live-g1').textContent);
-  const liveG2 = parseInt(document.getElementById('live-g2').textContent);
-  const liveCard = document.getElementById('placar-live-card');
-  const liveVisivel = liveCard && liveCard.style.display !== 'none';
+  // Pegar placar ao vivo atual (mesmo que o card esteja oculto)
+  const liveG1Txt = document.getElementById('live-g1').textContent.trim();
+  const liveG2Txt = document.getElementById('live-g2').textContent.trim();
+  const liveG1 = parseInt(liveG1Txt);
+  const liveG2 = parseInt(liveG2Txt);
+  const liveValido = !isNaN(liveG1) && !isNaN(liveG2) && liveG1Txt !== '-' && liveG2Txt !== '-';
 
   let html = '';
 
@@ -838,7 +839,7 @@ function renderPalpitesJogos(data) {
     let refG1 = null, refG2 = null;
     if (temResultado) {
       refG1 = parseInt(res.g1); refG2 = parseInt(res.g2);
-    } else if (i === 0 && liveVisivel && !isNaN(liveG1) && !isNaN(liveG2)) {
+    } else if (i === 0 && liveValido) {
       refG1 = liveG1; refG2 = liveG2;
     }
 
@@ -872,13 +873,16 @@ function renderPalpitesJogos(data) {
 
       // Placar ao vivo ou resultado
       if (temResultado) {
-        html += `<div class="pj-resultado-box" style="background:var(--azul)">
-          <span class="pj-resultado-lbl">✅ Resultado final</span>
-          <span class="pj-resultado-txt">${res.g1} × ${res.g2}</span>
-          ${acertaram.length > 0 ? `<span style="display:block;font-size:.72rem;color:#86efac;margin-top:4px">${acertaram.length} pessoa(s) acertou!</span>` : ''}
+        html += `<div style="background:var(--azul);border-radius:var(--radius);padding:.6rem 1rem;margin-bottom:.65rem;text-align:center;">
+          <div style="font-size:.68rem;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">✅ Resultado final</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--amarelo);letter-spacing:3px">${res.g1} × ${res.g2}</div>
+          ${acertaram.length > 0 ? `<div style="font-size:.72rem;color:#86efac;margin-top:2px">${acertaram.length} pessoa(s) acertou!</div>` : ''}
         </div>`;
-      } else if (i === 0 && liveVisivel && !isNaN(liveG1) && !isNaN(liveG2)) {
-        // Sem box — o highlight nas linhas já comunica
+      } else if (refG1 !== null) {
+        html += `<div style="background:#dc2626;border-radius:var(--radius);padding:.6rem 1rem;margin-bottom:.65rem;text-align:center;">
+          <div style="font-size:.68rem;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">⚽ Placar ao vivo</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--amarelo);letter-spacing:3px">${refG1} × ${refG2}</div>
+        </div>`;
       }
 
       if (total === 0) {
