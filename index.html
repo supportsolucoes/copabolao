@@ -969,6 +969,13 @@ let jogoModalAtual = 0;
 let dadosPalpites  = [];
 
 async function abrirPalpites() {
+  // Descobre o primeiro jogo com apostas abertas ou encerradas mais recente
+  const agora = new Date();
+  let tabInicial = 0;
+  for (let i = 0; i < JOGOS.length; i++) {
+    if (agora >= JOGOS[i].abertura) tabInicial = i;
+  }
+
   document.getElementById('modal-overlay').classList.add('ativo');
   document.getElementById('modal-tabs').innerHTML = '';
   document.getElementById('modal-conteudo').innerHTML = `
@@ -976,7 +983,7 @@ async function abrirPalpites() {
       <div class="spinner" style="border-top-color:var(--verde);margin:0 auto 1rem"></div>
       <div style="font-size:.85rem">Carregando palpites...</div>
     </div>
-    <iframe src="${APPS_SCRIPT_URL}?action=ver"
+    <iframe src="${APPS_SCRIPT_URL}?action=ver&tab=${tabInicial}"
       style="width:100%;height:60vh;border:none;border-radius:8px;display:none"
       id="palpites-iframe"
       onload="document.getElementById('iframe-loading').style.display='none';this.style.display='block'"
