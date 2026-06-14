@@ -257,8 +257,10 @@ function renderAdmin() {
   const tabs = document.getElementById('tabs');
   tabs.innerHTML = JOGOS.map((j, i) =>
     `<div class="tab ${i===jogoAtivo?'ativo':''}" onclick="trocarJogo(${i})">${j.nome}</div>`
-  ).join('') + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`
-             + `<div class="tab ${jogoAtivo===4?'ativo':''}" onclick="trocarJogo(4)">📊 Estatísticas</div>`;
+  ).join('')
+  + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`
+  + `<div class="tab ${jogoAtivo===4?'ativo':''}" onclick="trocarJogo(4)">📊 Estatísticas</div>`
+  + `<div class="tab ${jogoAtivo===5?'ativo':''}" onclick="trocarJogo(5)">📋 Resumo</div>`;
 
   renderConteudo();
 }
@@ -272,6 +274,7 @@ function renderConteudo() {
   const cont = document.getElementById('conteudo-admin');
   if (jogoAtivo === 3) { renderRanking(cont); return; }
   if (jogoAtivo === 4) { renderEstatisticas(cont); return; }
+  if (jogoAtivo === 5) { renderResumo(cont); return; }
 
   const jogo    = JOGOS[jogoAtivo];
   const palpites = (dadosAdmin.palpites || [])[jogoAtivo] || { itens: [] };
@@ -347,6 +350,65 @@ function renderConteudo() {
       ✅ ${confirmados} confirmado(s) · ⏳ ${pendentes} pendente(s)
     </div>
   `;
+}
+
+function renderResumo(cont) {
+  const resultados = dadosAdmin.resultados || [];
+  const palpites   = dadosAdmin.palpites   || [];
+
+  const linhas = JOGOS.map((jogo, i) => {
+    const itens  = (palpites[i] && palpites[i].itens) ? palpites[i].itens : [];
+    const total  = itens.length;
+    const arrecadado = (total * 5).toFixed(2).replace('.', ',');
+    const res    = resultados[i] || {};
+    const temRes = res.g1 !== undefined;
+    const confirmados = itens.filter(p => p.pgto === 'sim').length;
+    const acertaram = temRes
+      ? itens.filter(p => parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2).length
+      : '—';
+
+    const statusBadge = !temRes
+      ? '<span class="badge badge-pendente">Aguardando</span>'
+      : res.status === 'final' && res.premioPago
+        ? '<span class="badge badge-confirmado">✅ Pago</span>'
+        : res.status === 'final'
+          ? '<span class="badge badge-pendente">🏁 Encerrado</span>'
+          : '<span class="badge" style="background:#fff3cd;color:#856404">⚽ Em andamento</span>';
+
+    return `
+      <tr style="border-bottom:1px solid var(--cinza-borda)">
+        <td style="padding:.75rem 1rem;font-weight:600">${jogo.nome}</td>
+        <td style="padding:.75rem 1rem;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--azul)">${total}</td>
+        <td style="padding:.75rem 1rem;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--verde)">R$ ${arrecadado}</td>
+        <td style="padding:.75rem 1rem;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--azul)">${confirmados}</td>
+        <td style="padding:.75rem 1rem;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--amarelo2,#b45309)">${temRes ? res.g1 + ' × ' + res.g2 : '—'}</td>
+        <td style="padding:.75rem 1rem;text-align:center">${acertaram}</td>
+        <td style="padding:.75rem 1rem;text-align:center">${statusBadge}</td>
+      </tr>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div class="ranking-card">
+      <div class="ranking-title"><i class="ti ti-clipboard-list" style="font-size:18px;color:var(--verde)"></i>Resumo por Jogo</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+          <thead>
+            <tr style="background:var(--azul);color:white">
+              <th style="padding:.6rem 1rem;text-align:left;font-size:.75rem;letter-spacing:.5px">Jogo</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Palpites</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Arrecadado</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Pgto ✅</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Resultado</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Acertaram</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Status</th>
+            </tr>
+          </thead>
+          <tbody style="background:white">
+            ${linhas}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 function renderRanking(cont) {
