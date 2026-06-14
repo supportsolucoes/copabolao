@@ -859,6 +859,9 @@ function renderPalpitesJogos(data) {
     const proximoAberto = JOGOS.slice(i+1).some(j => agora >= j.abertura);
     const modoCompacto = apostasEncerradas && res && res.status === 'final' && proximoAberto;
 
+    // Só exibe card quando apostas estiverem encerradas
+    if (!apostasEncerradas) return;
+
     html += `<div class="pj-card">`;
     html += `<div class="pj-title">
       <span><i class="ti ti-ball-football" style="font-size:16px;color:var(--verde);vertical-align:middle;margin-right:4px"></i>${jogo.nome1} × ${jogo.nome2}</span>
