@@ -248,10 +248,27 @@ async function carregarDados() {
 function renderAdmin() {
   const d = dadosAdmin;
 
-  // Resumo
-  document.getElementById('res-total').textContent    = 'R$ ' + parseFloat(d.totalPremio).toFixed(2).replace('.', ',');
-  document.getElementById('res-palpites').textContent = d.totalPalpites;
-  document.getElementById('res-pendentes').textContent = d.totalPendentes;
+  // Cards do topo — mostra dados do jogo ativo (ou total se for aba Ranking/Estatísticas/Resumo)
+  const jogoIdx = jogoAtivo <= 2 ? jogoAtivo : null;
+  if (jogoIdx !== null && d.palpites && d.palpites[jogoIdx]) {
+    const itens      = d.palpites[jogoIdx].itens || [];
+    const total      = itens.length;
+    const confirmados = itens.filter(p => p.pgto === 'sim').length;
+    const pendentes  = total - confirmados;
+    const premio     = (total * 5).toFixed(2).replace('.', ',');
+    document.getElementById('res-total').textContent     = 'R$ ' + premio;
+    document.getElementById('res-palpites').textContent  = total;
+    document.getElementById('res-pendentes').textContent = pendentes;
+    document.querySelector('.resumo-card-lbl:nth-child(2)') // não altera labels
+    // Atualiza labels para deixar claro que é do jogo atual
+    document.querySelectorAll('.resumo-card-lbl')[0].textContent = '💰 ' + (JOGOS[jogoIdx] ? JOGOS[jogoIdx].nome : 'Jogo');
+  } else {
+    // Aba global — mostra totais
+    document.getElementById('res-total').textContent     = 'R$ ' + parseFloat(d.totalPremio).toFixed(2).replace('.', ',');
+    document.getElementById('res-palpites').textContent  = d.totalPalpites;
+    document.getElementById('res-pendentes').textContent = d.totalPendentes;
+    document.querySelectorAll('.resumo-card-lbl')[0].textContent = '💰 Total arrecadado';
+  }
 
   // Tabs
   const tabs = document.getElementById('tabs');
