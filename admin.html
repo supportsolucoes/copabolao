@@ -67,6 +67,8 @@
   .btn-salvar-resultado:hover { opacity:.9; }
   .btn-encerrar { background:#dc2626; color:white; border:none; border-radius:var(--radius); padding:.7rem 1.5rem; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; gap:6px; }
   .btn-encerrar:hover { opacity:.9; }
+  .btn-pago { background:#7c3aed; color:white; border:none; border-radius:var(--radius); padding:.7rem 1.5rem; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .btn-pago:hover { opacity:.9; }
   .status-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:.78rem; font-weight:600; margin-top:.5rem; }
   .status-parcial { background:#fff8e1; color:#7a5800; border:1px solid #f5c842; }
   .status-final { background:#f0fdf4; color:#15803d; border:1px solid #86efac; }
@@ -306,6 +308,13 @@ function renderConteudo() {
         <button class="btn-encerrar" onclick="salvarResultado(${jogoAtivo}, 'final')">
           <i class="ti ti-flag" style="font-size:16px"></i> ENCERRAR JOGO
         </button>
+        ${resultado.status === 'final' && !resultado.premioPago
+          ? `<button class="btn-pago" onclick="marcarPremioPago(${jogoAtivo})">
+              <i class="ti ti-trophy" style="font-size:16px"></i> MARCAR PRÊMIO COMO PAGO
+            </button>`
+          : resultado.premioPago
+            ? `<span class="status-badge status-final">💰 Prêmio pago</span>`
+            : ''}
       </div>
     </div>
 
@@ -479,6 +488,22 @@ function renderEstatisticas(cont) {
         : secoes
       }
     </div>`;
+}
+
+// ── Marcar prêmio como pago ──────────────────────────────────
+async function marcarPremioPago(jogoIdx) {
+  if (!confirm('Confirmar que o prêmio do Jogo ' + (jogoIdx+1) + ' foi pago?')) return;
+  mostrarOverlay('Registrando pagamento do prêmio...');
+  try {
+    await enviarBeacon(`action=premioPago&jogoIndex=${jogoIdx}`);
+    dadosAdmin.resultados[jogoIdx].premioPago = true;
+    renderAdmin();
+    toast('💰 Prêmio marcado como pago! Jogo seguinte começa do zero.');
+  } catch(err) {
+    toast('❌ Erro: ' + err.message);
+  } finally {
+    ocultarOverlay();
+  }
 }
 
 // ── Image beacon (cross-origin write) ────────────────────────

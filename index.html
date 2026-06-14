@@ -810,9 +810,10 @@ async function carregarDashboard() {
 function renderPalpitesJogos(data) {
   const container = document.getElementById('palpites-jogos-card');
   const agora = new Date();
-  const palpites = data.palpites || [];
+  const palpites   = data.palpites   || [];
   const resultados = data.resultados || [];
-  const ranking = data.ranking || [];
+  const ranking    = data.ranking    || [];
+  const historico  = data.historico  || [];
 
   // Pegar placar ao vivo atual (mesmo que o card esteja oculto)
   const liveG1Txt = document.getElementById('live-g1').textContent.trim();
@@ -869,10 +870,16 @@ function renderPalpitesJogos(data) {
     if (modoCompacto) {
       // MODO COMPACTO — só resultado + ganhadores com toggle
       const ganhadores = itens.filter(p => parseInt(p.g1) === refG1 && parseInt(p.g2) === refG2);
+      const hist = historico[i] || {};
+      const premioHistorico = hist.premio ? 'R$ ' + hist.premio.toFixed(2).replace('.', ',') : '';
       html += `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--azul);border-radius:var(--radius);padding:.55rem 1rem;margin-bottom:.5rem;">
         <div style="text-align:center;">
           <div style="font-size:.6rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">Resultado Final</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--amarelo);letter-spacing:3px;line-height:1">${res.g1} × ${res.g2}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:.6rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">Prêmio pago</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1rem;color:#86efac;line-height:1">${premioHistorico}</div>
         </div>
         <div style="text-align:center;">
           <div style="font-size:.6rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">Acertadores</div>
