@@ -852,6 +852,10 @@ function renderPalpitesJogos(data) {
       ? itens.filter(p => parseInt(p.g1) === parseInt(res.g1) && parseInt(p.g2) === parseInt(res.g2)).length
       : 0;
 
+    // Verifica se há jogo posterior aberto (este jogo ficou "para trás")
+    const proximoAberto = JOGOS.slice(i+1).some(j => agora >= j.abertura);
+    const modoCompacto = apostasEncerradas && res && res.status === 'final' && proximoAberto;
+
     html += `<div class="pj-card">`;
     html += `<div class="pj-title">
       <span><i class="ti ti-ball-football" style="font-size:16px;color:var(--verde);vertical-align:middle;margin-right:4px"></i>${jogo.nome1} × ${jogo.nome2}</span>
@@ -862,21 +866,47 @@ function renderPalpitesJogos(data) {
           : '<span class="pj-badge-aberto" style="background:#f0f4ff;color:var(--azul);border-color:#c7d2fe">⏳ Em breve</span>'}
     </div>`;
 
-    if (apostasEmBreve) {
-      // Jogo futuro — não liberado ainda
+    if (modoCompacto) {
+      // MODO COMPACTO — só resultado + ganhadores com toggle
+      const ganhadores = itens.filter(p => parseInt(p.g1) === refG1 && parseInt(p.g2) === refG2);
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--azul);border-radius:var(--radius);padding:.55rem 1rem;margin-bottom:.5rem;">
+        <div style="text-align:center;">
+          <div style="font-size:.6rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">Resultado Final</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--amarelo);letter-spacing:3px;line-height:1">${res.g1} × ${res.g2}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:.6rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">Acertadores</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:#86efac;line-height:1">${qtdAcertou}</div>
+        </div>
+        <button onclick="toggleGanhadores('g${i}')" style="background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600;" id="btn-g${i}">
+          👁 Ver
+        </button>
+      </div>`;
+      html += `<div id="g${i}" style="display:none">`;
+      if (ganhadores.length === 0) {
+        html += `<div class="pj-contagem" style="color:var(--texto-sec);padding:.5rem">Ninguém acertou — prêmio acumula!</div>`;
+      } else {
+        ganhadores.forEach(p => {
+          html += `<div class="pj-item ganhando">
+            <span class="pj-nome">${p.nome}</span>
+            <span class="pj-ganhando-label">✅</span>
+            <span class="pj-placar">${p.g1} × ${p.g2}</span>
+          </div>`;
+        });
+      }
+      html += `</div>`;
+
+    } else if (apostasEmBreve) {
       html += `<div class="pj-contagem">
         <strong style="font-size:1rem;font-family:Barlow,sans-serif;font-weight:600;color:var(--texto-sec)">⏳ Liberado após o apito final do jogo anterior</strong>
       </div>`;
     } else if (!apostasEncerradas) {
-      // Apostas abertas — só mostra contagem
       html += `<div class="pj-contagem">
         <strong>${total}</strong>
         aposta${total !== 1 ? 's' : ''} registrada${total !== 1 ? 's' : ''} · palpites revelados após encerramento
       </div>`;
     } else {
-      // Apostas encerradas — mostra tudo
-
-      // Placar ao vivo ou resultado
+      // Apostas encerradas — modo completo (jogo atual)
       if (temResultado) {
         const isFinal = res.status === 'final';
         const bgColor = isFinal ? 'var(--azul)' : '#f59e0b';
@@ -1097,6 +1127,14 @@ async function buscarFixtureIDs() {
 buscarFixtureIDs();
 buscarPlacarAoVivo();
 setInterval(buscarPlacarAoVivo, 60000);
+
+function toggleGanhadores(id) {
+  const el  = document.getElementById(id);
+  const btn = document.getElementById('btn-' + id);
+  const aberto = el.style.display !== 'none';
+  el.style.display  = aberto ? 'none' : 'block';
+  btn.textContent   = aberto ? '👁 Ver' : '🙈 Ocultar';
+}
 
 inicializarTabs();
 iniciarCountdown();
