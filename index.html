@@ -27,6 +27,8 @@
 
   .price-banner { background:var(--amarelo); color:var(--azul); text-align:center; padding:.6rem 1rem; font-weight:600; font-size:.9rem; border-radius:var(--radius); margin-bottom:1.25rem; }
   .price-banner span { font-family:'Bebas Neue',sans-serif; font-size:1.25rem; }
+  .banner-hero { position:relative; overflow:hidden; height:460px; }
+  @media(max-width:560px) { .banner-hero { height:240px; } }
 
   .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:1.25rem; }
   .step { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius); padding:.8rem .6rem; text-align:center; }
@@ -244,7 +246,7 @@
 <div class="container">
 
   <div class="hero" style="padding:0;overflow:hidden;background:var(--azul);border-radius:var(--radius-lg);">
-    <div style="position:relative;overflow:hidden;height:460px;">
+    <div class="banner-hero">
       <img src="banner.jpg" alt="Bolão Copa 2026" style="width:100%;display:block;object-fit:cover;object-position:center top;">
       <div style="position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(to bottom, transparent, var(--azul));"></div>
     </div>
