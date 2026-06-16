@@ -65,12 +65,19 @@
   .res-sep { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; color:var(--texto-sec); }
   .btn-salvar-resultado { background:var(--verde); color:white; border:none; border-radius:var(--radius); padding:.7rem 1.5rem; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; gap:6px; }
   .btn-salvar-resultado:hover { opacity:.9; }
+  .btn-encerrar { background:#dc2626; color:white; border:none; border-radius:var(--radius); padding:.7rem 1.5rem; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .btn-encerrar:hover { opacity:.9; }
+  .btn-pago { background:#7c3aed; color:white; border:none; border-radius:var(--radius); padding:.7rem 1.5rem; font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:1.5px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .btn-pago:hover { opacity:.9; }
+  .status-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:.78rem; font-weight:600; margin-top:.5rem; }
+  .status-parcial { background:#fff8e1; color:#7a5800; border:1px solid #f5c842; }
+  .status-final { background:#f0fdf4; color:#15803d; border:1px solid #86efac; }
   .resultado-atual { font-size:.82rem; color:var(--texto-sec); margin-top:.5rem; }
 
   /* TABELA PALPITES */
   .tabela-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:1rem; }
-  .tabela-header { display:grid; grid-template-columns:1fr 1fr 80px 100px 100px; gap:8px; padding:.65rem 1rem; background:var(--azul); font-size:.75rem; font-weight:600; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; }
-  .tabela-linha { display:grid; grid-template-columns:1fr 1fr 80px 100px 100px; gap:8px; padding:.65rem 1rem; border-bottom:1px solid var(--cinza-borda); font-size:.84rem; align-items:center; }
+  .tabela-header { display:grid; grid-template-columns:1fr 1fr 80px 120px; gap:8px; padding:.65rem 1rem; background:var(--azul); font-size:.75rem; font-weight:600; color:rgba(255,255,255,.85); text-transform:uppercase; letter-spacing:.5px; }
+  .tabela-linha { display:grid; grid-template-columns:1fr 1fr 80px 120px; gap:8px; padding:.65rem 1rem; border-bottom:1px solid var(--cinza-borda); font-size:.84rem; align-items:center; }
   .tabela-linha:last-child { border-bottom:none; }
   .tabela-linha:hover { background:var(--cinza-bg); }
   .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:.72rem; font-weight:600; }
@@ -106,10 +113,23 @@
   .toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%); background:#1a1a2e; color:white; padding:.65rem 1.25rem; border-radius:var(--radius); font-size:.85rem; z-index:1001; opacity:0; transition:opacity .3s; pointer-events:none; }
   .toast.show { opacity:1; }
 
+  /* ESTATÍSTICAS */
+  .estat-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:1rem; }
+  .estat-title { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--azul); letter-spacing:1px; margin-bottom:1rem; display:flex; align-items:center; gap:8px; }
+  .estat-jogo-label { font-size:.72rem; font-weight:600; color:var(--texto-sec); text-transform:uppercase; letter-spacing:.5px; margin-bottom:.6rem; padding-bottom:.35rem; border-bottom:1px solid var(--cinza-borda); }
+  .estat-linha { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .estat-placar { font-family:'Bebas Neue',sans-serif; font-size:1rem; color:var(--azul); background:var(--cinza-bg); border-radius:6px; padding:2px 10px; letter-spacing:1px; min-width:52px; text-align:center; flex-shrink:0; }
+  .estat-barra-wrap { flex:1; background:var(--cinza-bg); border-radius:20px; height:18px; overflow:hidden; }
+  .estat-barra { height:100%; border-radius:20px; background:var(--verde); transition:width .4s; }
+  .estat-barra.top { background:var(--azul); }
+  .estat-count { font-size:.78rem; font-weight:600; color:var(--texto); min-width:24px; text-align:right; flex-shrink:0; }
+  .estat-pct { font-size:.72rem; color:var(--texto-sec); min-width:38px; text-align:right; flex-shrink:0; }
+  .estat-vazio { text-align:center; color:var(--texto-sec); font-size:.85rem; padding:1.5rem; }
+
   @media(max-width:600px) {
     .resumo-grid { grid-template-columns:repeat(3,1fr); gap:8px; }
     .resumo-card-val { font-size:1.4rem; }
-    .tabela-header, .tabela-linha { grid-template-columns:1fr 70px 80px; }
+    .tabela-header, .tabela-linha { grid-template-columns:1fr 70px 110px; }
     .tabela-header .col-whats, .tabela-linha .col-whats,
     .tabela-header .col-data, .tabela-linha .col-data { display:none; }
   }
@@ -228,16 +248,36 @@ async function carregarDados() {
 function renderAdmin() {
   const d = dadosAdmin;
 
-  // Resumo
-  document.getElementById('res-total').textContent    = 'R$ ' + parseFloat(d.totalPremio).toFixed(2).replace('.', ',');
-  document.getElementById('res-palpites').textContent = d.totalPalpites;
-  document.getElementById('res-pendentes').textContent = d.totalPendentes;
+  // Cards do topo — mostra dados do jogo ativo (ou total se for aba Ranking/Estatísticas/Resumo)
+  const jogoIdx = jogoAtivo <= 2 ? jogoAtivo : null;
+  if (jogoIdx !== null && d.palpites && d.palpites[jogoIdx]) {
+    const itens      = d.palpites[jogoIdx].itens || [];
+    const total      = itens.length;
+    const confirmados = itens.filter(p => p.pgto === 'sim').length;
+    const pendentes  = total - confirmados;
+    const premio     = (total * 5).toFixed(2).replace('.', ',');
+    document.getElementById('res-total').textContent     = 'R$ ' + premio;
+    document.getElementById('res-palpites').textContent  = total;
+    document.getElementById('res-pendentes').textContent = pendentes;
+    document.querySelector('.resumo-card-lbl:nth-child(2)') // não altera labels
+    // Atualiza labels para deixar claro que é do jogo atual
+    document.querySelectorAll('.resumo-card-lbl')[0].textContent = '💰 ' + (JOGOS[jogoIdx] ? JOGOS[jogoIdx].nome : 'Jogo');
+  } else {
+    // Aba global — mostra totais
+    document.getElementById('res-total').textContent     = 'R$ ' + parseFloat(d.totalPremio).toFixed(2).replace('.', ',');
+    document.getElementById('res-palpites').textContent  = d.totalPalpites;
+    document.getElementById('res-pendentes').textContent = d.totalPendentes;
+    document.querySelectorAll('.resumo-card-lbl')[0].textContent = '💰 Total arrecadado';
+  }
 
   // Tabs
   const tabs = document.getElementById('tabs');
   tabs.innerHTML = JOGOS.map((j, i) =>
     `<div class="tab ${i===jogoAtivo?'ativo':''}" onclick="trocarJogo(${i})">${j.nome}</div>`
-  ).join('') + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`;
+  ).join('')
+  + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`
+  + `<div class="tab ${jogoAtivo===4?'ativo':''}" onclick="trocarJogo(4)">📊 Estatísticas</div>`
+  + `<div class="tab ${jogoAtivo===5?'ativo':''}" onclick="trocarJogo(5)">📋 Resumo</div>`;
 
   renderConteudo();
 }
@@ -250,14 +290,16 @@ function trocarJogo(idx) {
 function renderConteudo() {
   const cont = document.getElementById('conteudo-admin');
   if (jogoAtivo === 3) { renderRanking(cont); return; }
+  if (jogoAtivo === 4) { renderEstatisticas(cont); return; }
+  if (jogoAtivo === 5) { renderResumo(cont); return; }
 
   const jogo    = JOGOS[jogoAtivo];
   const palpites = (dadosAdmin.palpites || [])[jogoAtivo] || { itens: [] };
   const resultado = (dadosAdmin.resultados || [])[jogoAtivo] || {};
 
   // Confirmados e pendentes
-  const confirmados = palpites.itens.filter(p => p.pgto === 'sim').length;
-  const pendentes   = palpites.itens.filter(p => p.pgto !== 'sim').length;
+  const confirmados = palpites.itens.filter(p => String(p.pgto).toLowerCase() === 'sim').length;
+  const pendentes   = palpites.itens.filter(p => String(p.pgto).toLowerCase() !== 'sim').length;
 
   cont.innerHTML = `
     <!-- LANÇAR RESULTADO -->
@@ -272,10 +314,28 @@ function renderConteudo() {
         </div>
         <div class="resultado-time">${jogo.time2}</div>
       </div>
-      ${resultado.g1 !== undefined ? `<div class="resultado-atual">✅ Resultado atual: <strong>${resultado.g1} × ${resultado.g2}</strong></div>` : ''}
-      <button class="btn-salvar-resultado" onclick="salvarResultado(${jogoAtivo})">
-        <i class="ti ti-device-floppy" style="font-size:16px"></i> SALVAR RESULTADO
-      </button>
+      ${resultado.g1 !== undefined ? `
+        <div class="resultado-atual">
+          Placar: <strong>${resultado.g1} × ${resultado.g2}</strong>
+          <span class="status-badge ${resultado.status === 'final' ? 'status-final' : 'status-parcial'}">
+            ${resultado.status === 'final' ? '✅ Encerrado' : '⚽ Em andamento'}
+          </span>
+        </div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.5rem">
+        <button class="btn-salvar-resultado" onclick="salvarResultado(${jogoAtivo}, 'parcial')">
+          <i class="ti ti-device-floppy" style="font-size:16px"></i> SALVAR PARCIAL
+        </button>
+        <button class="btn-encerrar" onclick="salvarResultado(${jogoAtivo}, 'final')">
+          <i class="ti ti-flag" style="font-size:16px"></i> ENCERRAR JOGO
+        </button>
+        ${resultado.status === 'final' && !resultado.premioPago
+          ? `<button class="btn-pago" onclick="marcarPremioPago(${jogoAtivo})">
+              <i class="ti ti-trophy" style="font-size:16px"></i> MARCAR PRÊMIO COMO PAGO
+            </button>`
+          : resultado.premioPago
+            ? `<span class="status-badge status-final">💰 Prêmio pago</span>`
+            : ''}
+      </div>
     </div>
 
     <!-- PALPITES -->
@@ -284,7 +344,6 @@ function renderConteudo() {
         <div>Nome</div>
         <div class="col-whats">WhatsApp</div>
         <div>Palpite</div>
-        <div>Comprovante</div>
         <div>Pagamento</div>
       </div>
       ${palpites.itens.length === 0
@@ -294,9 +353,8 @@ function renderConteudo() {
             <div><strong>${p.nome}</strong><br><span style="font-size:.72rem;color:var(--texto-sec)">${p.codigo}</span></div>
             <div class="col-whats" style="font-size:.78rem;color:var(--texto-sec)">${p.whats}</div>
             <div><span class="placar-badge">${p.g1} × ${p.g2}</span></div>
-            <div><span class="badge badge-${p.comp === 'Pendente' ? 'pendente' : 'confirmado'}">${p.comp}</span></div>
             <div>
-              ${p.pgto === 'sim'
+              ${String(p.pgto).toLowerCase() === 'sim'
                 ? `<span class="badge badge-confirmado">✅ Confirmado</span>
                    <button class="btn-estornar" onclick="alterarPgto(${jogoAtivo},${i},'nao')" style="margin-top:3px">Estornar</button>`
                 : `<button class="btn-confirmar-pgto" onclick="alterarPgto(${jogoAtivo},${i},'sim')">✅ Confirmar</button>`
@@ -311,25 +369,107 @@ function renderConteudo() {
   `;
 }
 
+function renderResumo(cont) {
+  const resultados = dadosAdmin.resultados || [];
+  const palpites   = dadosAdmin.palpites   || [];
+
+  const linhas = JOGOS.map((jogo, i) => {
+    const itens  = (palpites[i] && palpites[i].itens) ? palpites[i].itens : [];
+    const total  = itens.length;
+    const arrecadado = (total * 5).toFixed(2).replace('.', ',');
+    const res    = resultados[i] || {};
+    const temRes = res.g1 !== undefined;
+    const confirmados = itens.filter(p => p.pgto === 'sim').length;
+    const acertaram = temRes
+      ? itens.filter(p => parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2).length
+      : '—';
+
+    const statusBadge = !temRes
+      ? '<span class="badge badge-pendente">Aguardando</span>'
+      : res.status === 'final' && res.premioPago
+        ? '<span class="badge badge-confirmado">✅ Pago</span>'
+        : res.status === 'final'
+          ? '<span class="badge badge-pendente">🏁 Encerrado</span>'
+          : '<span class="badge" style="background:#fff3cd;color:#856404">⚽ Em andamento</span>';
+
+    return `
+      <tr style="border-bottom:1px solid var(--cinza-borda)">
+        <td style="padding:.75rem 1rem;font-weight:600">${jogo.nome}</td>
+        <td style="padding:.75rem 1rem;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--azul)">${total}</td>
+        <td style="padding:.75rem 1rem;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--verde)">R$ ${arrecadado}</td>
+        <td style="padding:.75rem 1rem;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--azul)">${confirmados}</td>
+        <td style="padding:.75rem 1rem;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--amarelo2,#b45309)">${temRes ? res.g1 + ' × ' + res.g2 : '—'}</td>
+        <td style="padding:.75rem 1rem;text-align:center">${acertaram}</td>
+        <td style="padding:.75rem 1rem;text-align:center">${statusBadge}</td>
+      </tr>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div class="ranking-card">
+      <div class="ranking-title"><i class="ti ti-clipboard-list" style="font-size:18px;color:var(--verde)"></i>Resumo por Jogo</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+          <thead>
+            <tr style="background:var(--azul);color:white">
+              <th style="padding:.6rem 1rem;text-align:left;font-size:.75rem;letter-spacing:.5px">Jogo</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Palpites</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Arrecadado</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Pgto ✅</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Resultado</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Acertaram</th>
+              <th style="padding:.6rem 1rem;text-align:center;font-size:.75rem;letter-spacing:.5px">Status</th>
+            </tr>
+          </thead>
+          <tbody style="background:white">
+            ${linhas}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
 function renderRanking(cont) {
-  const ranking = dadosAdmin.ranking || [];
-  if (ranking.length === 0) {
+  const resultados = dadosAdmin.resultados || [];
+  const palpites   = dadosAdmin.palpites   || [];
+  const temResultado = resultados.some(r => r && r.g1 !== undefined);
+  if (!temResultado) {
     cont.innerHTML = `<div class="ranking-card"><div class="ranking-vazio">Nenhum resultado lançado ainda.</div></div>`;
     return;
   }
-
-  cont.innerHTML = ranking.map(jogo => {
-    const itens = (jogo.acertaram || []).length === 0
-      ? `<div class="ranking-vazio">Ninguém acertou — prêmio acumula!</div>`
-      : jogo.acertaram.map((a, i) => `
-          <div class="ranking-item">
-            <div class="ranking-pos">${['🥇','🥈','🥉'][i] || (i+1)}</div>
-            <div><div class="ranking-nome">${a.nome}</div><div class="ranking-placar">Palpite: ${a.p1} × ${a.p2}</div></div>
-          </div>`).join('');
+  cont.innerHTML = JOGOS.map((jogo, i) => {
+    const res = resultados[i];
+    if (!res || res.g1 === undefined) return '';
+    const itens = (palpites[i] && palpites[i].itens) ? palpites[i].itens : [];
+    if (itens.length === 0) return `
+      <div class="ranking-card">
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.nome} · ${res.g1} × ${res.g2}</div>
+        <div class="ranking-vazio">Nenhum palpite registrado.</div>
+      </div>`;
+    const ordenados = itens.slice().sort((a, b) => {
+      const aG = parseInt(a.g1) === res.g1 && parseInt(a.g2) === res.g2;
+      const bG = parseInt(b.g1) === res.g1 && parseInt(b.g2) === res.g2;
+      return (bG ? 1 : 0) - (aG ? 1 : 0);
+    });
+    const linhas = ordenados.map((p, idx) => {
+      const acertou = parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2;
+      const pgtoOk  = p.pgto === 'sim';
+      return `<div class="ranking-item" style="${acertou ? 'background:#f0fdf4;border:1px solid #86efac' : ''}">
+        <div class="ranking-pos" style="color:${acertou ? 'var(--verde)' : 'var(--texto-sec)'}">${acertou ? '✅' : (idx+1)}</div>
+        <div style="flex:1">
+          <div class="ranking-nome">${p.nome}</div>
+          <div class="ranking-placar">Palpite: ${p.g1} × ${p.g2} · ${pgtoOk ? '<span style="color:var(--verde)">Pgto ✅</span>' : '<span style="color:var(--laranja)">Pgto ⏳</span>'}</div>
+        </div>
+        ${acertou ? '<div style="font-size:.72rem;font-weight:700;color:var(--verde)">ACERTOU!</div>' : ''}
+      </div>`;
+    }).join('');
+    const qtdAcertou = ordenados.filter(p => parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2).length;
     return `
       <div class="ranking-card">
-        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.jogo} · ${jogo.resultado}</div>
-        ${itens}
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.nome} · ${res.g1} × ${res.g2}
+          <span style="font-size:.75rem;font-family:Barlow,sans-serif;font-weight:400;color:var(--texto-sec);margin-left:8px">${qtdAcertou} acertou · ${itens.length} total</span>
+        </div>
+        ${qtdAcertou === 0 ? '<div class="ranking-vazio" style="margin-bottom:.5rem">Ninguém acertou — prêmio acumula!</div>' : ''}
+        ${linhas}
       </div>`;
   }).join('');
 }
@@ -351,17 +491,93 @@ async function alterarPgto(jogoIdx, itemIdx, status) {
 }
 
 // ── Salvar resultado ──────────────────────────────────────────
-async function salvarResultado(jogoIdx) {
+async function salvarResultado(jogoIdx, status) {
   const g1 = document.getElementById(`res1-${jogoIdx}`).value;
   const g2 = document.getElementById(`res2-${jogoIdx}`).value;
   if (g1 === '' || g2 === '') { toast('⚽ Preencha o placar antes de salvar.'); return; }
-  mostrarOverlay('Salvando resultado...');
+  const label = status === 'final' ? 'Encerrando jogo...' : 'Salvando parcial...';
+  mostrarOverlay(label);
   try {
-    await enviarBeacon(`action=resultado&jogoIndex=${jogoIdx}&g1=${g1}&g2=${g2}`);
+    await enviarBeacon(`action=resultado&jogoIndex=${jogoIdx}&g1=${g1}&g2=${g2}&status=${status}`);
     if (!dadosAdmin.resultados) dadosAdmin.resultados = [];
-    dadosAdmin.resultados[jogoIdx] = { g1: parseInt(g1), g2: parseInt(g2) };
+    dadosAdmin.resultados[jogoIdx] = { g1: parseInt(g1), g2: parseInt(g2), status: status };
     await carregarDados();
-    toast('✅ Resultado salvo e ranking atualizado!');
+    toast(status === 'final' ? '🏁 Jogo encerrado!' : '✅ Parcial salvo!');
+  } catch(err) {
+    toast('❌ Erro: ' + err.message);
+  } finally {
+    ocultarOverlay();
+  }
+}
+
+// ── Estatísticas de palpites ──────────────────────────────────
+function renderEstatisticas(cont) {
+  const todosPalpites = dadosAdmin.palpites || [];
+  let temDados = false;
+
+  const secoes = JOGOS.map((jogo, idx) => {
+    const itens = (todosPalpites[idx] || { itens: [] }).itens;
+    if (itens.length === 0) return `
+      <div style="margin-bottom:1.25rem">
+        <div class="estat-jogo-label">${jogo.nome}</div>
+        <div class="estat-vazio">Nenhum palpite ainda.</div>
+      </div>`;
+
+    temDados = true;
+    const total = itens.length;
+
+    // Contagem por placar
+    const contagem = {};
+    itens.forEach(p => {
+      const k = p.g1 + ' × ' + p.g2;
+      contagem[k] = (contagem[k] || 0) + 1;
+    });
+
+    // Ordenar por quantidade desc
+    const sorted = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+    const maxVal = sorted[0][1];
+
+    const linhas = sorted.map((entry, i) => {
+      const [placar, qtd] = entry;
+      const pct = Math.round((qtd / total) * 100);
+      const largura = Math.round((qtd / maxVal) * 100);
+      return `
+        <div class="estat-linha">
+          <div class="estat-placar">${placar}</div>
+          <div class="estat-barra-wrap">
+            <div class="estat-barra ${i===0?'top':''}" style="width:${largura}%"></div>
+          </div>
+          <div class="estat-count">${qtd}</div>
+          <div class="estat-pct">${pct}%</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="margin-bottom:1.25rem">
+        <div class="estat-jogo-label">${jogo.nome} · ${total} palpite${total!==1?'s':''}</div>
+        ${linhas}
+      </div>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div class="estat-card">
+      <div class="estat-title"><i class="ti ti-chart-bar" style="font-size:18px;color:var(--verde)"></i>Distribuição de Palpites</div>
+      ${!temDados
+        ? '<div class="estat-vazio">Nenhum palpite registrado ainda.</div>'
+        : secoes
+      }
+    </div>`;
+}
+
+// ── Marcar prêmio como pago ──────────────────────────────────
+async function marcarPremioPago(jogoIdx) {
+  if (!confirm('Confirmar que o prêmio do Jogo ' + (jogoIdx+1) + ' foi pago?')) return;
+  mostrarOverlay('Registrando pagamento do prêmio...');
+  try {
+    await enviarBeacon(`action=premioPago&jogoIndex=${jogoIdx}`);
+    dadosAdmin.resultados[jogoIdx].premioPago = true;
+    renderAdmin();
+    toast('💰 Prêmio marcado como pago! Jogo seguinte começa do zero.');
   } catch(err) {
     toast('❌ Erro: ' + err.message);
   } finally {
