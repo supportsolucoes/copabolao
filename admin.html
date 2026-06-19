@@ -277,7 +277,8 @@ function renderAdmin() {
   ).join('')
   + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`
   + `<div class="tab ${jogoAtivo===4?'ativo':''}" onclick="trocarJogo(4)">📊 Estatísticas</div>`
-  + `<div class="tab ${jogoAtivo===5?'ativo':''}" onclick="trocarJogo(5)">📋 Resumo</div>`;
+  + `<div class="tab ${jogoAtivo===5?'ativo':''}" onclick="trocarJogo(5)">📋 Resumo</div>`
+  + `<div class="tab ${jogoAtivo===6?'ativo':''}" onclick="trocarJogo(6)">🔍 Não Voltaram</div>`;
 
   renderConteudo();
 }
@@ -292,6 +293,7 @@ function renderConteudo() {
   if (jogoAtivo === 3) { renderRanking(cont); return; }
   if (jogoAtivo === 4) { renderEstatisticas(cont); return; }
   if (jogoAtivo === 5) { renderResumo(cont); return; }
+  if (jogoAtivo === 6) { renderNaoVoltaram(cont); return; }
 
   const jogo    = JOGOS[jogoAtivo];
   const palpites = (dadosAdmin.palpites || [])[jogoAtivo] || { itens: [] };
@@ -366,6 +368,58 @@ function renderConteudo() {
     <div style="font-size:.78rem;color:var(--texto-sec);text-align:right;margin-top:-6px;margin-bottom:1rem">
       ✅ ${confirmados} confirmado(s) · ⏳ ${pendentes} pendente(s)
     </div>
+  `;
+}
+
+function normalizarWhats(w) {
+  return (w || '').toString().replace(/\D/g, '').slice(-9); // últimos 9 dígitos (ignora DDD/código país)
+}
+
+function renderNaoVoltaram(cont) {
+  const palpites = dadosAdmin.palpites || [];
+
+  // Monta um mapa: chave (whats normalizado) -> nome, por jogo
+  function participantesDoJogo(idx) {
+    const itens = (palpites[idx] && palpites[idx].itens) ? palpites[idx].itens : [];
+    const map = new Map();
+    itens.forEach(p => {
+      const key = normalizarWhats(p.whats) || ('nome:' + (p.nome||'').toLowerCase().trim());
+      if (!map.has(key)) map.set(key, p.nome);
+    });
+    return map;
+  }
+
+  const html = [];
+  for (let i = 0; i < JOGOS.length - 1; i++) {
+    const atual  = participantesDoJogo(i);
+    const seguinte = participantesDoJogo(i + 1);
+    const naoVoltaram = [];
+    atual.forEach((nome, key) => {
+      if (!seguinte.has(key)) naoVoltaram.push(nome);
+    });
+
+    html.push(`
+      <div class="ranking-card">
+        <div class="ranking-title">
+          <i class="ti ti-user-x" style="font-size:18px;color:var(--vermelho)"></i>
+          Apostaram em "${JOGOS[i].nome}" mas não em "${JOGOS[i+1].nome}"
+          <span style="font-size:.75rem;font-family:Barlow,sans-serif;font-weight:400;color:var(--texto-sec);margin-left:8px">${naoVoltaram.length} pessoa(s)</span>
+        </div>
+        ${naoVoltaram.length === 0
+          ? '<div class="ranking-vazio">🎉 Todo mundo voltou!</div>'
+          : naoVoltaram.map(nome => `
+              <div class="ranking-item" style="background:var(--cinza-bg);border:1px solid var(--cinza-borda)">
+                <div class="ranking-pos" style="color:var(--vermelho)"><i class="ti ti-user-x" style="font-size:16px"></i></div>
+                <div class="ranking-nome">${nome}</div>
+              </div>`).join('')}
+      </div>`);
+  }
+
+  cont.innerHTML = `
+    <div style="font-size:.8rem;color:var(--texto-sec);margin-bottom:1rem;padding:.75rem 1rem;background:#fff8e1;border:1px solid #f5c842;border-radius:var(--radius)">
+      💡 Comparação feita pelo WhatsApp informado. Se a pessoa digitou o número diferente entre os jogos, pode aparecer aqui por engano.
+    </div>
+    ${html.join('')}
   `;
 }
 
