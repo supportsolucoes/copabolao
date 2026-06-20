@@ -278,7 +278,8 @@ function renderAdmin() {
   + `<div class="tab ${jogoAtivo===3?'ativo':''}" onclick="trocarJogo(3)">🏆 Ranking</div>`
   + `<div class="tab ${jogoAtivo===4?'ativo':''}" onclick="trocarJogo(4)">📊 Estatísticas</div>`
   + `<div class="tab ${jogoAtivo===5?'ativo':''}" onclick="trocarJogo(5)">📋 Resumo</div>`
-  + `<div class="tab ${jogoAtivo===6?'ativo':''}" onclick="trocarJogo(6)">🔍 Não Voltaram</div>`;
+  + `<div class="tab ${jogoAtivo===6?'ativo':''}" onclick="trocarJogo(6)">🔍 Não Voltaram</div>`
+  + `<div class="tab ${jogoAtivo===7?'ativo':''}" onclick="trocarJogo(7)">🥇 Ranking Geral</div>`;
 
   renderConteudo();
 }
@@ -294,6 +295,7 @@ function renderConteudo() {
   if (jogoAtivo === 4) { renderEstatisticas(cont); return; }
   if (jogoAtivo === 5) { renderResumo(cont); return; }
   if (jogoAtivo === 6) { renderNaoVoltaram(cont); return; }
+  if (jogoAtivo === 7) { renderRankingGeral(cont); return; }
 
   const jogo    = JOGOS[jogoAtivo];
   const palpites = (dadosAdmin.palpites || [])[jogoAtivo] || { itens: [] };
@@ -367,6 +369,80 @@ function renderConteudo() {
     </div>
     <div style="font-size:.78rem;color:var(--texto-sec);text-align:right;margin-top:-6px;margin-bottom:1rem">
       ✅ ${confirmados} confirmado(s) · ⏳ ${pendentes} pendente(s)
+    </div>
+  `;
+}
+
+function renderRankingGeral(cont) {
+  const palpites   = dadosAdmin.palpites   || [];
+  const resultados = dadosAdmin.resultados || [];
+
+  // Mapa: chave (whats normalizado) -> { nome, pontos, acertos: [bool,bool,bool], jogos: [{jogo,palpite,acertou}] }
+  const pessoas = new Map();
+
+  JOGOS.forEach((jogo, idx) => {
+    const res = resultados[idx];
+    const temRes = res && res.g1 !== undefined;
+    const itens = (palpites[idx] && palpites[idx].itens) ? palpites[idx].itens : [];
+
+    itens.forEach(p => {
+      const key = normalizarWhats(p.whats) || ('nome:' + (p.nome||'').toLowerCase().trim());
+      if (!pessoas.has(key)) {
+        pessoas.set(key, { nome: p.nome, pontos: 0, jogos: [null, null, null] });
+      }
+      const pessoa = pessoas.get(key);
+      const acertou = temRes && parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2;
+      // Mantém o melhor resultado se houver múltiplos palpites no mesmo jogo
+      if (!pessoa.jogos[idx] || (acertou && !pessoa.jogos[idx].acertou)) {
+        pessoa.jogos[idx] = { palpite: p.g1 + ' × ' + p.g2, acertou: acertou, temRes: temRes };
+      }
+    });
+  });
+
+  // Calcula pontos totais e cravadas
+  const lista = [];
+  pessoas.forEach((pessoa, key) => {
+    const pontos = pessoa.jogos.filter(j => j && j.acertou).length;
+    const jogosComResultado = pessoa.jogos.filter(j => j && j.temRes).length;
+    const participouTodos = pessoa.jogos.every(j => j !== null);
+    const cravada = participouTodos && pontos === 3;
+    lista.push({ nome: pessoa.nome, pontos: pontos, jogos: pessoa.jogos, cravada: cravada, jogosComResultado: jogosComResultado });
+  });
+
+  lista.sort((a, b) => b.pontos - a.pontos);
+
+  const cravadas = lista.filter(p => p.cravada);
+
+  const linhasRanking = lista.map((p, i) => {
+    const medalha = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1);
+    const bolinhas = p.jogos.map(j => {
+      if (!j) return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e0e3ee;margin:0 2px"></span>';
+      if (!j.temRes) return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f5c842;margin:0 2px" title="aguardando resultado"></span>';
+      return j.acertou
+        ? '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--verde);margin:0 2px" title="acertou"></span>'
+        : '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--vermelho);margin:0 2px" title="errou"></span>';
+    }).join('');
+    return `
+      <div class="ranking-item" style="${p.cravada ? 'background:#fff8e1;border:1px solid #f5c842' : ''}">
+        <div class="ranking-pos">${medalha}</div>
+        <div style="flex:1">
+          <div class="ranking-nome">${p.nome} ${p.cravada ? '🏆 CRAVOU OS 3!' : ''}</div>
+          <div style="margin-top:3px">${bolinhas}</div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--azul)">${p.pontos} pt${p.pontos!==1?'s':''}</div>
+      </div>`;
+  }).join('');
+
+  cont.innerHTML = `
+    ${cravadas.length > 0 ? `
+      <div class="ranking-card" style="background:linear-gradient(135deg,#fff8e1,#ffedb3);border:2px solid #f5c842">
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:20px;color:#b45309"></i>🏆 Cravaram os 3 jogos!</div>
+        ${cravadas.map(p => `<div class="ranking-item" style="background:white"><div class="ranking-pos">🏆</div><div class="ranking-nome">${p.nome}</div></div>`).join('')}
+      </div>` : ''}
+    <div class="ranking-card">
+      <div class="ranking-title"><i class="ti ti-medal" style="font-size:18px;color:var(--amarelo)"></i>Ranking Geral — Pontos por jogo acertado</div>
+      <div style="font-size:.75rem;color:var(--texto-sec);margin-bottom:.75rem">🟢 acertou · 🔴 errou · 🟡 aguardando resultado · ⚪ não apostou</div>
+      ${lista.length === 0 ? '<div class="ranking-vazio">Nenhum palpite registrado ainda.</div>' : linhasRanking}
     </div>
   `;
 }
