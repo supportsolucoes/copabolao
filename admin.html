@@ -394,24 +394,37 @@ function renderRankingGeral(cont) {
       }
       const pessoa = pessoas.get(key);
       const acertou = temRes && parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2;
-      // Mantém o melhor resultado se houver múltiplos palpites no mesmo jogo
-      if (!pessoa.jogos[idx] || (acertou && !pessoa.jogos[idx].acertou)) {
-        pessoa.jogos[idx] = { palpite: p.g1 + ' × ' + p.g2, acertou: acertou, temRes: temRes };
+      const diferenca = temRes ? Math.abs(parseInt(p.g1) - res.g1) + Math.abs(parseInt(p.g2) - res.g2) : null;
+      // Mantém o melhor resultado se houver múltiplos palpites no mesmo jogo (acerta > menor diferença)
+      const atual = pessoa.jogos[idx];
+      const melhorQueAtual = !atual || (acertou && !atual.acertou) ||
+        (!atual.acertou && !acertou && diferenca !== null && (atual.diferenca === null || diferenca < atual.diferenca));
+      if (melhorQueAtual) {
+        pessoa.jogos[idx] = { palpite: p.g1 + ' × ' + p.g2, acertou: acertou, temRes: temRes, diferenca: diferenca };
       }
     });
   });
 
-  // Calcula pontos totais e cravadas
+  // Calcula pontos totais, cravadas e diferença total (criterio de desempate)
   const lista = [];
   pessoas.forEach((pessoa, key) => {
     const pontos = pessoa.jogos.filter(j => j && j.acertou).length;
     const jogosComResultado = pessoa.jogos.filter(j => j && j.temRes).length;
     const participouTodos = pessoa.jogos.every(j => j !== null);
     const cravada = participouTodos && pontos === 3;
-    lista.push({ nome: pessoa.nome, pontos: pontos, jogos: pessoa.jogos, cravada: cravada, jogosComResultado: jogosComResultado });
+    // Soma a diferença só dos jogos que errou (acertos contam diferença 0)
+    const diferencaTotal = pessoa.jogos.reduce((soma, j) => {
+      if (!j || !j.temRes) return soma;
+      return soma + (j.acertou ? 0 : (j.diferenca || 0));
+    }, 0);
+    lista.push({ nome: pessoa.nome, pontos: pontos, jogos: pessoa.jogos, cravada: cravada, jogosComResultado: jogosComResultado, diferencaTotal: diferencaTotal });
   });
 
-  lista.sort((a, b) => b.pontos - a.pontos);
+  // Ordena por pontos (desc), depois por menor diferença total (desempate)
+  lista.sort((a, b) => {
+    if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+    return a.diferencaTotal - b.diferencaTotal;
+  });
   _ultimoRankingGeral = lista;
 
   const cravadas = lista.filter(p => p.cravada);
@@ -432,7 +445,10 @@ function renderRankingGeral(cont) {
           <div class="ranking-nome">${p.nome} ${p.cravada ? '🏆 CRAVOU OS 3!' : ''}</div>
           <div style="margin-top:3px">${bolinhas}</div>
         </div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--azul)">${p.pontos} pt${p.pontos!==1?'s':''}</div>
+        <div style="text-align:right">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--azul)">${p.pontos} pt${p.pontos!==1?'s':''}</div>
+          ${p.jogosComResultado > p.pontos ? `<div style="font-size:.65rem;color:var(--texto-sec)">dif: ${p.diferencaTotal}</div>` : ''}
+        </div>
       </div>`;
   }).join('');
 
@@ -449,7 +465,7 @@ function renderRankingGeral(cont) {
           <i class="ti ti-brand-whatsapp" style="font-size:15px"></i> Compartilhar
         </button>
       </div>
-      <div style="font-size:.75rem;color:var(--texto-sec);margin-bottom:.75rem">🟢 acertou · 🔴 errou · 🟡 aguardando resultado · ⚪ não apostou</div>
+      <div style="font-size:.75rem;color:var(--texto-sec);margin-bottom:.75rem">🟢 acertou · 🔴 errou · 🟡 aguardando resultado · ⚪ não apostou<br><span style="color:#7a5800">Empate em pontos é desempatado por quem ficou mais perto do placar nos jogos que errou (menor "dif" vence).</span></div>
       ${lista.length === 0 ? '<div class="ranking-vazio">Nenhum palpite registrado ainda.</div>' : linhasRanking}
     </div>
   `;
