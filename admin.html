@@ -391,7 +391,7 @@ function renderRankingGeral(cont) {
     itens.forEach(p => {
       const key = normalizarWhats(p.whats) || ('nome:' + (p.nome||'').toLowerCase().trim());
       if (!pessoas.has(key)) {
-        pessoas.set(key, { nome: p.nome, pontos: 0, jogos: [null, null, null] });
+        pessoas.set(key, { nome: p.nome, pontos: 0, jogos: new Array(JOGOS.length).fill(null) });
       }
       const pessoa = pessoas.get(key);
       const acertou = temRes && parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2;
@@ -412,7 +412,7 @@ function renderRankingGeral(cont) {
     const pontos = pessoa.jogos.filter(j => j && j.acertou).length;
     const jogosComResultado = pessoa.jogos.filter(j => j && j.temRes).length;
     const participouTodos = pessoa.jogos.every(j => j !== null);
-    const cravada = participouTodos && pontos === 3;
+    const cravada = participouTodos && pontos === JOGOS.length;
     // Soma a diferença só dos jogos que errou (acertos contam diferença 0)
     const diferencaTotal = pessoa.jogos.reduce((soma, j) => {
       if (!j || !j.temRes) return soma;
@@ -443,7 +443,7 @@ function renderRankingGeral(cont) {
       <div class="ranking-item" style="${p.cravada ? 'background:#fff8e1;border:1px solid #f5c842' : ''}">
         <div class="ranking-pos">${medalha}</div>
         <div style="flex:1">
-          <div class="ranking-nome">${p.nome} ${p.cravada ? '🏆 CRAVOU OS 3!' : ''}</div>
+          <div class="ranking-nome">${p.nome} ${p.cravada ? '🏆 CRAVOU OS ' + JOGOS.length + '!' : ''}</div>
           <div style="margin-top:3px">${bolinhas}</div>
         </div>
         <div style="text-align:right">
@@ -456,7 +456,7 @@ function renderRankingGeral(cont) {
   cont.innerHTML = `
     ${cravadas.length > 0 ? `
       <div class="ranking-card" style="background:linear-gradient(135deg,#fff8e1,#ffedb3);border:2px solid #f5c842">
-        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:20px;color:#b45309"></i>🏆 Cravaram os 3 jogos!</div>
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:20px;color:#b45309"></i>🏆 Cravaram os ${JOGOS.length} jogos!</div>
         ${cravadas.map(p => `<div class="ranking-item" style="background:white"><div class="ranking-pos">🏆</div><div class="ranking-nome">${p.nome}</div></div>`).join('')}
       </div>` : ''}
     <div class="ranking-card">
@@ -479,7 +479,7 @@ function compartilharRankingWhatsApp() {
   let msg = '🏆 *RANKING GERAL — BOLÃO COPA 2026* 🇧🇷⚽\n\n';
 
   if (cravadas.length > 0) {
-    msg += '🎯 *CRAVARAM OS 3 JOGOS:*\n';
+    msg += '🎯 *CRAVARAM OS ' + JOGOS.length + ' JOGOS:*\n';
     cravadas.forEach(p => { msg += '🏆 ' + p.nome + '\n'; });
     msg += '\n';
   }
