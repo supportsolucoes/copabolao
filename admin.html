@@ -608,6 +608,13 @@ function renderResumo(cont) {
     </div>`;
 }
 
+let _ocultarPagosRanking = true;
+
+function toggleEncerradosRanking() {
+  _ocultarPagosRanking = !_ocultarPagosRanking;
+  renderRanking(document.getElementById('conteudo-admin'));
+}
+
 function renderRanking(cont) {
   const resultados = dadosAdmin.resultados || [];
   const palpites   = dadosAdmin.palpites   || [];
@@ -616,13 +623,23 @@ function renderRanking(cont) {
     cont.innerHTML = `<div class="ranking-card"><div class="ranking-vazio">Nenhum resultado lançado ainda.</div></div>`;
     return;
   }
-  cont.innerHTML = JOGOS.map((jogo, i) => {
+
+  let qtdOcultos = 0;
+
+  const cards = JOGOS.map((jogo, i) => {
     const res = resultados[i];
     if (!res || res.g1 === undefined) return '';
+
+    const pago = res.premioPago === true;
+    if (pago && _ocultarPagosRanking) {
+      qtdOcultos++;
+      return '';
+    }
+
     const itens = (palpites[i] && palpites[i].itens) ? palpites[i].itens : [];
     if (itens.length === 0) return `
       <div class="ranking-card">
-        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.nome} · ${res.g1} × ${res.g2}</div>
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.nome} · ${res.g1} × ${res.g2} ${pago ? '💰' : ''}</div>
         <div class="ranking-vazio">Nenhum palpite registrado.</div>
       </div>`;
     const ordenados = itens.slice().sort((a, b) => {
@@ -645,13 +662,27 @@ function renderRanking(cont) {
     const qtdAcertou = ordenados.filter(p => parseInt(p.g1) === res.g1 && parseInt(p.g2) === res.g2).length;
     return `
       <div class="ranking-card">
-        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.nome} · ${res.g1} × ${res.g2}
+        <div class="ranking-title"><i class="ti ti-trophy" style="font-size:18px;color:var(--amarelo)"></i>${jogo.nome} · ${res.g1} × ${res.g2} ${pago ? '💰' : ''}
           <span style="font-size:.75rem;font-family:Barlow,sans-serif;font-weight:400;color:var(--texto-sec);margin-left:8px">${qtdAcertou} acertou · ${itens.length} total</span>
         </div>
         ${qtdAcertou === 0 ? '<div class="ranking-vazio" style="margin-bottom:.5rem">Ninguém acertou — prêmio acumula!</div>' : ''}
         ${linhas}
       </div>`;
   }).join('');
+
+  const botaoToggle = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem">
+      <button onclick="toggleEncerradosRanking()" style="background:var(--cinza-bg);border:1px solid var(--cinza-borda);color:var(--texto-sec);border-radius:8px;padding:5px 12px;font-size:.75rem;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600;display:flex;align-items:center;gap:5px">
+        <i class="ti ti-${_ocultarPagosRanking ? 'eye' : 'eye-off'}" style="font-size:14px"></i>
+        ${_ocultarPagosRanking ? 'Mostrar pagos' : 'Ocultar pagos'}
+      </button>
+    </div>`;
+
+  const avisoOcultos = qtdOcultos > 0
+    ? `<div style="font-size:.75rem;color:var(--texto-sec);margin-bottom:.75rem">💰 ${qtdOcultos} jogo${qtdOcultos!==1?'s':''} com prêmio já pago oculto${qtdOcultos!==1?'s':''}</div>`
+    : '';
+
+  cont.innerHTML = botaoToggle + avisoOcultos + (cards || '<div class="ranking-card"><div class="ranking-vazio">Nenhum jogo para exibir com este filtro.</div></div>');
 }
 
 // ── Confirmar / estornar pagamento ────────────────────────────
