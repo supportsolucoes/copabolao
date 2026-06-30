@@ -691,15 +691,32 @@ async function salvarResultado(jogoIdx, status) {
 }
 
 // ── Estatísticas de palpites ──────────────────────────────────
+let _ocultarEncerradosEstat = true;
+
+function toggleEncerradosEstat() {
+  _ocultarEncerradosEstat = !_ocultarEncerradosEstat;
+  renderEstatisticas(document.getElementById('conteudo-admin'));
+}
+
 function renderEstatisticas(cont) {
-  const todosPalpites = dadosAdmin.palpites || [];
+  const todosPalpites = dadosAdmin.palpites   || [];
+  const resultados    = dadosAdmin.resultados || [];
   let temDados = false;
+  let qtdOcultos = 0;
 
   const secoes = JOGOS.map((jogo, idx) => {
+    const res = resultados[idx];
+    const encerrado = res && res.status === 'final';
+
+    if (encerrado && _ocultarEncerradosEstat) {
+      qtdOcultos++;
+      return '';
+    }
+
     const itens = (todosPalpites[idx] || { itens: [] }).itens;
     if (itens.length === 0) return `
       <div style="margin-bottom:1.25rem">
-        <div class="estat-jogo-label">${jogo.nome}</div>
+        <div class="estat-jogo-label">${jogo.nome} ${encerrado ? '🔒' : ''}</div>
         <div class="estat-vazio">Nenhum palpite ainda.</div>
       </div>`;
 
@@ -734,15 +751,22 @@ function renderEstatisticas(cont) {
 
     return `
       <div style="margin-bottom:1.25rem">
-        <div class="estat-jogo-label">${jogo.nome} · ${total} palpite${total!==1?'s':''}</div>
+        <div class="estat-jogo-label">${jogo.nome} ${encerrado ? '🔒' : ''} · ${total} palpite${total!==1?'s':''}</div>
         ${linhas}
       </div>`;
   }).join('');
 
   cont.innerHTML = `
     <div class="estat-card">
-      <div class="estat-title"><i class="ti ti-chart-bar" style="font-size:18px;color:var(--verde)"></i>Distribuição de Palpites</div>
-      ${!temDados
+      <div class="estat-title" style="justify-content:space-between">
+        <span><i class="ti ti-chart-bar" style="font-size:18px;color:var(--verde)"></i>Distribuição de Palpites</span>
+        <button onclick="toggleEncerradosEstat()" style="background:var(--cinza-bg);border:1px solid var(--cinza-borda);color:var(--texto-sec);border-radius:8px;padding:5px 12px;font-size:.75rem;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600;display:flex;align-items:center;gap:5px">
+          <i class="ti ti-${_ocultarEncerradosEstat ? 'eye' : 'eye-off'}" style="font-size:14px"></i>
+          ${_ocultarEncerradosEstat ? 'Mostrar encerrados' : 'Ocultar encerrados'}
+        </button>
+      </div>
+      ${qtdOcultos > 0 ? `<div style="font-size:.75rem;color:var(--texto-sec);margin-bottom:.75rem">🔒 ${qtdOcultos} jogo${qtdOcultos!==1?'s':''} encerrado${qtdOcultos!==1?'s':''} oculto${qtdOcultos!==1?'s':''}</div>` : ''}
+      ${!temDados && qtdOcultos === 0
         ? '<div class="estat-vazio">Nenhum palpite registrado ainda.</div>'
         : secoes
       }
