@@ -197,24 +197,6 @@
   .modal-jogo-header { font-size:.72rem; font-weight:600; color:var(--texto-sec); text-transform:uppercase; letter-spacing:.5px; margin:1rem 0 .5rem; padding-bottom:.35rem; border-bottom:1px solid var(--cinza-borda); }
   .modal-vazio { text-align:center; color:var(--texto-sec); font-size:.85rem; padding:2rem; }
 
-  /* PLACAR AO VIVO */
-  .placar-live-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1.1rem 1.25rem; margin-bottom:1.25rem; display:none; }
-  .placar-live-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
-  .placar-live-title { font-size:.72rem; font-weight:600; color:var(--texto-sec); text-transform:uppercase; letter-spacing:.5px; }
-  .placar-live-badge { font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:20px; }
-  .badge-live { background:#fee2e2; color:#dc2626; animation:pulse 1.5s infinite; }
-  .badge-ft   { background:#f0fdf4; color:#15803d; }
-  .badge-ns   { background:#f0f4ff; color:var(--azul); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-  .placar-live-row { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; }
-  .placar-live-time { display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .placar-live-flag { width:44px; height:auto; border-radius:4px; }
-  .placar-live-nome { font-size:.75rem; font-weight:600; color:var(--texto); }
-  .placar-live-gols { display:flex; align-items:center; gap:8px; }
-  .placar-live-num { font-family:'Bebas Neue',sans-serif; font-size:2.4rem; color:var(--azul); letter-spacing:2px; line-height:1; min-width:36px; text-align:center; }
-  .placar-live-sep { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; color:var(--texto-sec); }
-  .placar-live-min { text-align:center; font-size:.72rem; color:var(--texto-sec); margin-top:.4rem; }
-
   /* PALPITES POR JOGO */
   .pj-card { background:var(--branco); border:1px solid var(--cinza-borda); border-radius:var(--radius-lg); padding:1.1rem; margin-bottom:1rem; }
   .pj-title { font-family:'Bebas Neue',sans-serif; font-size:1.1rem; color:var(--azul); letter-spacing:1px; margin-bottom:.75rem; display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -275,31 +257,7 @@
   <!-- RANKING -->
   <!-- PALPITES POR JOGO inserido abaixo -->
 
-  <!-- PLACAR AO VIVO -->
-  <div class="placar-live-card" id="placar-live-card">
-    <div class="placar-live-header">
-      <div class="placar-live-title">⚽ Placar ao vivo</div>
-      <div class="placar-live-badge" id="placar-live-badge">AO VIVO</div>
-    </div>
-    <div class="placar-live-row">
-      <div class="placar-live-time">
-        <img id="live-flag1" src="https://flagcdn.com/w80/br.png" class="placar-live-flag" alt="">
-        <div class="placar-live-nome" id="live-nome1">Brasil</div>
-      </div>
-      <div>
-        <div class="placar-live-gols">
-          <div class="placar-live-num" id="live-g1">0</div>
-          <div class="placar-live-sep">×</div>
-          <div class="placar-live-num" id="live-g2">0</div>
-        </div>
-        <div class="placar-live-min" id="live-min"></div>
-      </div>
-      <div class="placar-live-time">
-        <img id="live-flag2" src="https://flagcdn.com/w80/ma.png" class="placar-live-flag" alt="">
-        <div class="placar-live-nome" id="live-nome2">Marrocos</div>
-      </div>
-    </div>
-  </div>
+  <!-- (card de placar ao vivo via API removido — atualização agora 100% manual pelo admin) -->
 
   <div class="steps">
     <div class="step"><div class="step-num">1</div><div class="step-lbl">Digite seu palpite</div></div>
@@ -827,13 +785,6 @@ function renderPalpitesJogos(data) {
   const ranking    = data.ranking    || [];
   const historico  = data.historico  || [];
 
-  // Pegar placar ao vivo atual (mesmo que o card esteja oculto)
-  const liveG1Txt = document.getElementById('live-g1').textContent.trim();
-  const liveG2Txt = document.getElementById('live-g2').textContent.trim();
-  const liveG1 = parseInt(liveG1Txt);
-  const liveG2 = parseInt(liveG2Txt);
-  const liveValido = !isNaN(liveG1) && !isNaN(liveG2) && liveG1Txt !== '-' && liveG2Txt !== '-';
-
   let html = '';
 
   JOGOS.forEach((jogo, i) => {
@@ -843,19 +794,14 @@ function renderPalpitesJogos(data) {
     const itens = (palpites[i] && palpites[i].itens) ? palpites[i].itens : [];
     const total = itens.length;
 
-    // Resultado final (se lançado pelo admin)
+    // Resultado (parcial ou final), lançado pelo admin
     const res = resultados[i];
     const temResultado = res && res.g1 !== undefined && res.g1 !== null && res.g1 !== '';
 
-    // Placar de referência para highlight:
-    // - Se tem resultado final → usa ele
-    // - Se é jogo 0 e tem placar ao vivo → usa ao vivo
-    // - Caso contrário → null (sem highlight)
+    // Placar de referência para highlight: vem do resultado lançado no admin (parcial ou final)
     let refG1 = null, refG2 = null;
     if (temResultado) {
       refG1 = parseInt(res.g1); refG2 = parseInt(res.g2);
-    } else if (i === 0 && liveValido) {
-      refG1 = liveG1; refG2 = liveG2;
     }
 
     // Ranking info para este jogo — usa posição no array
@@ -1027,135 +973,6 @@ function renderModalPalpites(idx) {
 function fecharPalpites() {
   document.getElementById('modal-overlay').classList.remove('ativo');
 }
-
-// ── Placar ao vivo ────────────────────────────────────────────
-const API_KEY  = '52443e9849550f6f279748a5c16ce099';
-const API_URL  = 'https://v3.football.api-sports.io';
-
-// IDs dos jogos do Brasil na Copa 2026 — atualizar após sorteio oficial
-const FIXTURE_IDS = {
-  0: null, // Brasil x Marrocos — preencher após sorteio
-  1: null, // Brasil x Haiti
-  2: null, // Escócia x Brasil
-};
-
-const FLAGS_API = {
-  'Brazil':   'https://flagcdn.com/w80/br.png',
-  'Morocco':  'https://flagcdn.com/w80/ma.png',
-  'Haiti':    'https://flagcdn.com/w80/ht.png',
-  'Scotland': 'https://flagcdn.com/w80/gb-sct.png',
-};
-
-async function buscarPlacarAoVivo() {
-  const agora = new Date();
-  let fixtureId = null;
-  let jogoIdx   = -1;
-
-  for (let i = 0; i < JOGOS.length; i++) {
-    const j = JOGOS[i];
-    const fimJogo = new Date(j.fechamento.getTime() + 3 * 60 * 60 * 1000);
-    if (agora >= j.fechamento && agora <= fimJogo) {
-      fixtureId = FIXTURE_IDS[i];
-      jogoIdx   = i;
-      break;
-    }
-  }
-
-  // Se não tem ID fixo, busca ao vivo
-  if (!fixtureId) {
-    try {
-      const resp = await fetch(`${API_URL}/fixtures?live=all&team=6`, {
-        headers: { 'x-apisports-key': API_KEY }
-      });
-      const data = await resp.json();
-      if (data.response && data.response.length > 0) {
-        const fixture = data.response[0];
-        console.log('🔴 JOGO AO VIVO encontrado! ID:', fixture.fixture.id,
-          '|', fixture.teams.home.name, 'x', fixture.teams.away.name,
-          '| Status:', fixture.fixture.status.short);
-        mostrarPlacar(fixture, true);
-        if (window._dashData) renderPalpitesJogos(window._dashData);
-      }
-    } catch(e) { console.log('Erro ao buscar ao vivo:', e); }
-    return;
-  }
-
-  try {
-    const resp = await fetch(`${API_URL}/fixtures?id=${fixtureId}`, {
-      headers: { 'x-apisports-key': API_KEY }
-    });
-    const data = await resp.json();
-    if (data.response && data.response.length > 0) {
-      mostrarPlacar(data.response[0], true);
-    }
-  } catch(e) {}
-}
-
-function mostrarPlacar(fixture, mostrar) {
-  const card = document.getElementById('placar-live-card');
-  if (!mostrar || !fixture) { card.style.display = 'none'; return; }
-
-  const status = fixture.fixture.status.short; // 'NS','1H','HT','2H','FT' etc
-  const teams  = fixture.teams;
-  const goals  = fixture.goals;
-  const elapsed = fixture.fixture.status.elapsed;
-
-  // Badge de status
-  const badge = document.getElementById('placar-live-badge');
-  if (status === 'FT') {
-    badge.textContent = 'ENCERRADO';
-    badge.className = 'placar-live-badge badge-ft';
-  } else if (status === 'NS') {
-    badge.textContent = 'EM BREVE';
-    badge.className = 'placar-live-badge badge-ns';
-  } else {
-    badge.textContent = '● AO VIVO';
-    badge.className = 'placar-live-badge badge-live';
-  }
-
-  // Times e placar
-  document.getElementById('live-nome1').textContent = teams.home.name;
-  document.getElementById('live-nome2').textContent = teams.away.name;
-  document.getElementById('live-g1').textContent    = goals.home !== null ? goals.home : '-';
-  document.getElementById('live-g2').textContent    = goals.away !== null ? goals.away : '-';
-  document.getElementById('live-min').textContent   = elapsed ? `${elapsed}'` : '';
-
-  // Bandeiras
-  const f1 = FLAGS_API[teams.home.name] || teams.home.logo;
-  const f2 = FLAGS_API[teams.away.name] || teams.away.logo;
-  document.getElementById('live-flag1').src = f1;
-  document.getElementById('live-flag2').src = f2;
-
-  card.style.display = 'block';
-
-  // Atualiza highlights se os dados já estiverem carregados
-  if (window._dashData) renderPalpitesJogos(window._dashData);
-}
-
-// Busca a cada 60 segundos durante jogos
-// Busca IDs dos fixtures do Brasil na Copa 2026
-async function buscarFixtureIDs() {
-  const datas = ['2026-06-13', '2026-06-19', '2026-06-24'];
-  for (let i = 0; i < datas.length; i++) {
-    try {
-      const resp = await fetch(`${API_URL}/fixtures?team=6&date=${datas[i]}`, {
-        headers: { 'x-apisports-key': API_KEY }
-      });
-      const data = await resp.json();
-      if (data.response && data.response.length > 0) {
-        data.response.forEach(f => {
-          console.log(`📅 Jogo ${i} (${datas[i]}): ID=${f.fixture.id} | ${f.teams.home.name} x ${f.teams.away.name} | Liga: ${f.league.name}`);
-        });
-      } else {
-        console.log(`📅 Jogo ${i} (${datas[i]}): nenhum resultado`);
-      }
-    } catch(e) { console.log(`Erro jogo ${i}:`, e); }
-  }
-}
-
-buscarFixtureIDs();
-buscarPlacarAoVivo();
-setInterval(buscarPlacarAoVivo, 60000);
 
 function toggleGanhadores(id) {
   const el  = document.getElementById(id);
