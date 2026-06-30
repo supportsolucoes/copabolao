@@ -203,6 +203,7 @@ const JOGOS = [
   { idx:1, nome:'Brasil x Haiti',    time1:'Brasil',  time2:'Haiti'    },
   { idx:2, nome:'Brasil x Escócia',  time1:'Brasil', time2:'Escócia'   },
   { idx:3, nome:'Brasil x Japão',    time1:'Brasil', time2:'Japão'     },
+  { idx:4, nome:'Brasil x Noruega',  time1:'Brasil', time2:'Noruega'   },
 ];
 
 let dadosAdmin = null;
@@ -250,7 +251,7 @@ function renderAdmin() {
   const d = dadosAdmin;
 
   // Cards do topo — mostra dados do jogo ativo (ou total se for aba Ranking/Estatísticas/Resumo)
-  const jogoIdx = jogoAtivo <= 3 ? jogoAtivo : null;
+  const jogoIdx = jogoAtivo < JOGOS.length ? jogoAtivo : null;
   if (jogoIdx !== null && d.palpites && d.palpites[jogoIdx]) {
     const itens      = d.palpites[jogoIdx].itens || [];
     const total      = itens.length;
@@ -276,11 +277,11 @@ function renderAdmin() {
   tabs.innerHTML = JOGOS.map((j, i) =>
     `<div class="tab ${i===jogoAtivo?'ativo':''}" onclick="trocarJogo(${i})">${j.nome}</div>`
   ).join('')
-  + `<div class="tab ${jogoAtivo===4?'ativo':''}" onclick="trocarJogo(4)">🏆 Ranking</div>`
-  + `<div class="tab ${jogoAtivo===5?'ativo':''}" onclick="trocarJogo(5)">📊 Estatísticas</div>`
-  + `<div class="tab ${jogoAtivo===6?'ativo':''}" onclick="trocarJogo(6)">📋 Resumo</div>`
-  + `<div class="tab ${jogoAtivo===7?'ativo':''}" onclick="trocarJogo(7)">🔍 Não Voltaram</div>`
-  + `<div class="tab ${jogoAtivo===8?'ativo':''}" onclick="trocarJogo(8)">🥇 Ranking Geral</div>`;
+  + `<div class="tab ${jogoAtivo===JOGOS.length?'ativo':''}" onclick="trocarJogo(${JOGOS.length})">🏆 Ranking</div>`
+  + `<div class="tab ${jogoAtivo===JOGOS.length+1?'ativo':''}" onclick="trocarJogo(${JOGOS.length+1})">📊 Estatísticas</div>`
+  + `<div class="tab ${jogoAtivo===JOGOS.length+2?'ativo':''}" onclick="trocarJogo(${JOGOS.length+2})">📋 Resumo</div>`
+  + `<div class="tab ${jogoAtivo===JOGOS.length+3?'ativo':''}" onclick="trocarJogo(${JOGOS.length+3})">🔍 Não Voltaram</div>`
+  + `<div class="tab ${jogoAtivo===JOGOS.length+4?'ativo':''}" onclick="trocarJogo(${JOGOS.length+4})">🥇 Ranking Geral</div>`;
 
   renderConteudo();
 }
@@ -292,11 +293,11 @@ function trocarJogo(idx) {
 
 function renderConteudo() {
   const cont = document.getElementById('conteudo-admin');
-  if (jogoAtivo === 4) { renderRanking(cont); return; }
-  if (jogoAtivo === 5) { renderEstatisticas(cont); return; }
-  if (jogoAtivo === 6) { renderResumo(cont); return; }
-  if (jogoAtivo === 7) { renderNaoVoltaram(cont); return; }
-  if (jogoAtivo === 8) { renderRankingGeral(cont); return; }
+  if (jogoAtivo === JOGOS.length)   { renderRanking(cont); return; }
+  if (jogoAtivo === JOGOS.length+1) { renderEstatisticas(cont); return; }
+  if (jogoAtivo === JOGOS.length+2) { renderResumo(cont); return; }
+  if (jogoAtivo === JOGOS.length+3) { renderNaoVoltaram(cont); return; }
+  if (jogoAtivo === JOGOS.length+4) { renderRankingGeral(cont); return; }
 
   const jogo    = JOGOS[jogoAtivo];
   const palpites = (dadosAdmin.palpites || [])[jogoAtivo] || { itens: [] };
