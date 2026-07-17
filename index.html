@@ -40,7 +40,7 @@
   .card-title i { color:var(--verde); font-size:20px; }
 
   /* TABS */
-  .jogo-tabs { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:1.2rem; }
+  .jogo-tabs { display:grid; grid-template-columns:1fr; gap:5px; margin-bottom:1.2rem; }
   .jogo-tab { background:var(--cinza-bg); border:1.5px solid var(--cinza-borda); border-radius:var(--radius); padding:.75rem .5rem; text-align:center; cursor:pointer; transition:all .18s; color:var(--texto-sec); line-height:1.3; }
   .jogo-tab:hover { border-color:var(--azul); }
   .jogo-tab.ativo { background:var(--azul); border-color:var(--azul); color:var(--branco); }
@@ -288,32 +288,7 @@
     <div class="card">
       <div class="card-title"><i class="ti ti-ball-football"></i>Adicionar Palpite</div>
       <div class="jogo-tabs" id="jogo-tabs">
-        <div class="jogo-tab ativo" onclick="selecionarJogo(0)">
-          <div class="tab-flags"><img src="https://flagcdn.com/w40/br.png" class="tab-flag-img" alt="Brasil"><span class="tab-vs">×</span><img src="https://flagcdn.com/w40/ma.png" class="tab-flag-img" alt="Marrocos"></div>
-          <div class="tab-names">Brasil × Marrocos</div>
-          <div class="tab-data">13/06 · 19h</div>
-        </div>
-        <div class="jogo-tab" onclick="selecionarJogo(1)">
-          <div class="tab-flags"><img src="https://flagcdn.com/w40/br.png" class="tab-flag-img" alt="Brasil"><span class="tab-vs">×</span><img src="https://flagcdn.com/w40/ht.png" class="tab-flag-img" alt="Haiti"></div>
-          <div class="tab-names">Brasil × Haiti</div>
-          <div class="tab-data">19/06 · 21h30</div>
-        </div>
-        <div class="jogo-tab" onclick="selecionarJogo(2)">
-          <div class="tab-flags"><img src="https://flagcdn.com/w40/br.png" class="tab-flag-img" alt="Brasil"><span class="tab-vs">×</span><img src="https://flagcdn.com/w40/gb-sct.png" class="tab-flag-img" alt="Escócia"></div>
-          <div class="tab-names">Brasil × Escócia</div>
-          <div class="tab-data">24/06 · 19h</div>
-        </div>
-        <div class="jogo-tab" onclick="selecionarJogo(3)">
-          <div class="tab-flags"><img src="https://flagcdn.com/w40/br.png" class="tab-flag-img" alt="Brasil"><span class="tab-vs">×</span><img src="https://flagcdn.com/w40/jp.png" class="tab-flag-img" alt="Japão"></div>
-          <div class="tab-names">Brasil × Japão</div>
-          <div class="tab-data">29/06 · 14h</div>
-        </div>
-        <div class="jogo-tab" onclick="selecionarJogo(4)">
-          <div class="tab-flags"><img src="https://flagcdn.com/w40/br.png" class="tab-flag-img" alt="Brasil"><span class="tab-vs">×</span><img src="https://flagcdn.com/w40/no.png" class="tab-flag-img" alt="Noruega"></div>
-          <div class="tab-names">Brasil × Noruega</div>
-          <div class="tab-data">05/07 · 17h</div>
-        </div>
-        <div class="jogo-tab" onclick="selecionarJogo(5)">
+        <div class="jogo-tab ativo" onclick="selecionarJogo(5)">
           <div class="tab-flags"><img src="https://flagcdn.com/w40/es.png" class="tab-flag-img" alt="Espanha"><span class="tab-vs">×</span><img src="https://flagcdn.com/w40/ar.png" class="tab-flag-img" alt="Argentina"></div>
           <div class="tab-names">Espanha × Argentina</div>
           <div class="tab-data">19/07 · 16h · Final</div>
@@ -477,6 +452,9 @@ const JOGOS = [
   { idx:5, label:'Final · 19/07/2026 às 16:00', flag1:'https://flagcdn.com/w80/es.png', alt1:'Espanha', nome1:'Espanha', flag2:'https://flagcdn.com/w80/ar.png', alt2:'Argentina', nome2:'Argentina', abertura:new Date('2000-01-01T00:00:00-03:00'), fechamento:new Date('2026-07-19T15:00:00-03:00') },
 ];
 
+// Índices dos jogos visíveis na página pública (oculta jogos do Brasil encerrados)
+const JOGOS_VISIVEIS = JOGOS.filter(j => j.idx >= 5);
+
 let jogoAtual = 0;
 let carrinho  = [];
 
@@ -484,18 +462,20 @@ let carrinho  = [];
 function inicializarTabs() {
   const tabs = document.querySelectorAll('.jogo-tab');
   let primeiro = -1;
-  JOGOS.forEach((j, i) => {
+  // Usa JOGOS_VISIVEIS para controlar as tabs (jogos do Brasil ficam ocultos)
+  JOGOS_VISIVEIS.forEach((j, vi) => {
     const agora = new Date();
     const aberto = agora >= j.abertura && agora <= j.fechamento;
     const futuro = agora < j.abertura;
-    tabs[i].classList.remove('ativo','bloqueado');
+    if (!tabs[vi]) return;
+    tabs[vi].classList.remove('ativo','bloqueado');
     if (aberto) {
-      if (primeiro === -1) primeiro = i;
-      tabs[i].onclick = () => selecionarJogo(i);
+      if (primeiro === -1) primeiro = j.idx;
+      tabs[vi].onclick = () => selecionarJogo(j.idx);
     } else {
-      tabs[i].classList.add('bloqueado');
-      tabs[i].onclick = null;
-      const d = tabs[i].querySelector('.tab-data');
+      tabs[vi].classList.add('bloqueado');
+      tabs[vi].onclick = null;
+      const d = tabs[vi].querySelector('.tab-data');
       if (d) d.textContent = futuro ? 'Em breve' : 'Encerrado';
     }
   });
@@ -702,8 +682,8 @@ function iniciarCountdown() {
     const agora = new Date();
     let proximoJogo = null;
 
-    for (let i = 0; i < JOGOS.length; i++) {
-      const j = JOGOS[i];
+    for (let i = 0; i < JOGOS_VISIVEIS.length; i++) {
+      const j = JOGOS_VISIVEIS[i];
       if (agora >= j.abertura && agora <= j.fechamento) {
         proximoJogo = { jogo: j, tipo: 'aberto' };
         break;
@@ -791,7 +771,7 @@ function renderPalpitesJogos(data) {
 
   let html = '';
 
-  JOGOS.forEach((jogo, i) => {
+  JOGOS_VISIVEIS.forEach((jogo, i) => {
     const apostasEncerradas = agora > jogo.fechamento;
     const apostasAbertas = agora >= jogo.abertura && agora <= jogo.fechamento;
     const apostasEmBreve = agora < jogo.abertura;
@@ -932,8 +912,8 @@ async function abrirPalpites() {
   // Descobre o primeiro jogo com apostas abertas ou encerradas mais recente
   const agora = new Date();
   let tabInicial = 0;
-  for (let i = 0; i < JOGOS.length; i++) {
-    if (agora >= JOGOS[i].abertura) tabInicial = i;
+  for (let i = 0; i < JOGOS_VISIVEIS.length; i++) {
+    if (agora >= JOGOS_VISIVEIS[i].abertura) tabInicial = JOGOS_VISIVEIS[i].idx;
   }
 
   document.getElementById('modal-overlay').classList.add('ativo');
