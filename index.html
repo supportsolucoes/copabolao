@@ -503,11 +503,10 @@ function selecionarJogo(idx) {
 
 // ── Código único ──────────────────────────────────────────────
 function gerarCodigo(idx) {
-  const p = ['J1','J2','J3'];
   const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let r = '';
   for (let i=0;i<4;i++) r += c[Math.floor(Math.random()*c.length)];
-  return p[idx] + '-' + r;
+  return 'J' + (idx + 1) + '-' + r;
 }
 
 // ── Carrinho ──────────────────────────────────────────────────
