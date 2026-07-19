@@ -804,8 +804,7 @@ function renderPalpitesJogos(data) {
     const proximoAberto = JOGOS.slice(idx+1).some(j => agora >= j.abertura);
     const modoCompacto = apostasEncerradas && res && res.status === 'final' && proximoAberto;
 
-    // Só exibe card quando apostas estiverem encerradas
-    if (!apostasEncerradas) return;
+    // Sempre exibe o card (só 1 jogo visível agora)
 
     html += `<div class="pj-card">`;
     html += `<div class="pj-title">
