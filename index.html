@@ -775,15 +775,16 @@ function renderPalpitesJogos(data) {
 
   let html = '';
 
-  JOGOS_VISIVEIS.forEach((jogo, i) => {
+  JOGOS_VISIVEIS.forEach((jogo, vi) => {
+    const idx = jogo.idx; // índice real no array JOGOS (ex: 5 para o Jogo 6)
     const apostasEncerradas = agora > jogo.fechamento;
     const apostasAbertas = agora >= jogo.abertura && agora <= jogo.fechamento;
     const apostasEmBreve = agora < jogo.abertura;
-    const itens = (palpites[i] && palpites[i].itens) ? palpites[i].itens : [];
+    const itens = (palpites[idx] && palpites[idx].itens) ? palpites[idx].itens : [];
     const total = itens.length;
 
     // Resultado (parcial ou final), lançado pelo admin
-    const res = resultados[i];
+    const res = resultados[idx];
     const temResultado = res && res.g1 !== undefined && res.g1 !== null && res.g1 !== '';
 
     // Placar de referência para highlight: vem do resultado lançado no admin (parcial ou final)
@@ -792,15 +793,15 @@ function renderPalpitesJogos(data) {
       refG1 = parseInt(res.g1); refG2 = parseInt(res.g2);
     }
 
-    // Ranking info para este jogo — usa posição no array
-    const rankingJogo = (ranking && ranking[i]) ? ranking[i] : null;
+    // Ranking info para este jogo — usa índice real
+    const rankingJogo = (ranking && ranking[idx]) ? ranking[idx] : null;
     // Conta acertadores direto dos palpites (independente de pagamento)
     const qtdAcertou = temResultado
       ? itens.filter(p => parseInt(p.g1) === parseInt(res.g1) && parseInt(p.g2) === parseInt(res.g2)).length
       : 0;
 
     // Verifica se há jogo posterior aberto (este jogo ficou "para trás")
-    const proximoAberto = JOGOS.slice(i+1).some(j => agora >= j.abertura);
+    const proximoAberto = JOGOS.slice(idx+1).some(j => agora >= j.abertura);
     const modoCompacto = apostasEncerradas && res && res.status === 'final' && proximoAberto;
 
     // Só exibe card quando apostas estiverem encerradas
@@ -819,7 +820,7 @@ function renderPalpitesJogos(data) {
     if (modoCompacto) {
       // MODO COMPACTO — só resultado + ganhadores com toggle
       const ganhadores = itens.filter(p => parseInt(p.g1) === refG1 && parseInt(p.g2) === refG2);
-      const hist = historico[i] || {};
+      const hist = historico[idx] || {};
       const premioHistorico = hist.premio ? 'R$ ' + hist.premio.toFixed(2).replace('.', ',') : '';
       html += `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--azul);border-radius:var(--radius);padding:.55rem 1rem;margin-bottom:.5rem;">
         <div style="text-align:center;">
@@ -834,11 +835,11 @@ function renderPalpitesJogos(data) {
           <div style="font-size:.6rem;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.5px">Acertadores</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:#86efac;line-height:1">${qtdAcertou}</div>
         </div>
-        <button onclick="toggleGanhadores('g${i}')" style="background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600;" id="btn-g${i}">
+        <button onclick="toggleGanhadores('g${idx}')" style="background:rgba(255,255,255,.15);border:none;color:white;border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:Barlow,sans-serif;font-weight:600;" id="btn-g${idx}">
           👁 Ver
         </button>
       </div>`;
-      html += `<div id="g${i}" style="display:none">`;
+      html += `<div id="g${idx}" style="display:none">`;
       if (ganhadores.length === 0) {
         html += `<div class="pj-contagem" style="color:var(--texto-sec);padding:.5rem">Ninguém acertou — prêmio acumula!</div>`;
       } else {
