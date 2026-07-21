@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventário de Máquinas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  * , *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --azul:#0f2557; --azul-claro:#3b5bdb; --verde:#12b886; --vermelho:#e03131; --amarelo:#f59f00;
+    --bg:#f4f6fb; --card:#ffffff; --borda:#e3e7f0; --texto:#1a1a2e; --texto-sec:#6b7280; --radius:12px;
+  }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--texto); padding:1.5rem; }
+  .wrap { max-width:1280px; margin:0 auto; }
+
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:12px; }
+  .titulo { display:flex; align-items:center; gap:12px; }
+  .titulo i { font-size:28px; color:var(--azul-claro); }
+  .titulo h1 { font-size:1.4rem; color:var(--azul); }
+  .titulo p { font-size:.8rem; color:var(--texto-sec); }
+  .actions { display:flex; gap:8px; }
+  button { font-family:'Inter',sans-serif; cursor:pointer; border:none; border-radius:8px; padding:.55rem 1rem; font-size:.85rem; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .btn-primary { background:var(--azul-claro); color:#fff; }
+  .btn-primary:hover { background:var(--azul); }
+  .btn-outline { background:#fff; color:var(--azul); border:1px solid var(--borda); }
+  .btn-outline:hover { border-color:var(--azul-claro); }
+
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:1.5rem; }
+  .card { background:var(--card); border:1px solid var(--borda); border-radius:var(--radius); padding:1rem 1.2rem; }
+  .card .lbl { font-size:.72rem; text-transform:uppercase; letter-spacing:.5px; color:var(--texto-sec); }
+  .card .val { font-size:1.6rem; font-weight:700; color:var(--azul); margin-top:2px; }
+
+  .toolbar { display:flex; gap:10px; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
+  .toolbar input, .toolbar select { padding:.55rem .8rem; border:1px solid var(--borda); border-radius:8px; font-size:.85rem; font-family:'Inter',sans-serif; background:#fff; }
+  .toolbar input { flex:1; min-width:220px; }
+
+  .tabela-box { background:var(--card); border:1px solid var(--borda); border-radius:var(--radius); overflow:auto; }
+  table { width:100%; border-collapse:collapse; min-width:900px; }
+  th, td { text-align:left; padding:.7rem .9rem; font-size:.82rem; border-bottom:1px solid var(--borda); white-space:nowrap; }
+  th { color:var(--texto-sec); text-transform:uppercase; font-size:.68rem; letter-spacing:.5px; cursor:pointer; user-select:none; }
+  th:hover { color:var(--azul); }
+  tbody tr:hover { background:#f8f9fd; cursor:pointer; }
+  .vazio { text-align:center; padding:3rem; color:var(--texto-sec); }
+  .badge { display:inline-block; padding:2px 9px; border-radius:20px; font-size:.7rem; font-weight:600; background:#eef1f8; color:var(--azul); }
+
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(15,37,87,.45); align-items:center; justify-content:center; padding:1rem; z-index:50; }
+  .modal-overlay.aberto { display:flex; }
+  .modal { background:#fff; border-radius:var(--radius); max-width:760px; width:100%; max-height:88vh; overflow:auto; padding:1.5rem; }
+  .modal-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; }
+  .modal-header h2 { color:var(--azul); font-size:1.2rem; }
+  .modal-header .sub { font-size:.78rem; color:var(--texto-sec); margin-top:2px; }
+  .modal-close { background:none; border:none; font-size:22px; color:var(--texto-sec); cursor:pointer; }
+  .modal-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:1.2rem; }
+  .modal-grid .box { background:var(--bg); border-radius:8px; padding:.6rem .8rem; }
+  .modal-grid .box .lbl { font-size:.68rem; text-transform:uppercase; color:var(--texto-sec); }
+  .modal-grid .box .val { font-size:.88rem; font-weight:600; color:var(--texto); margin-top:2px; }
+  .modal section { margin-bottom:1.1rem; }
+  .modal section h3 { font-size:.85rem; color:var(--azul); margin-bottom:.5rem; }
+  .modal table { min-width:0; }
+  .soft-search { width:100%; padding:.45rem .7rem; border:1px solid var(--borda); border-radius:6px; margin-bottom:.5rem; font-size:.8rem; }
+
+  .loading { text-align:center; padding:3rem; color:var(--texto-sec); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="titulo">
+      <i class="ti ti-devices-pc"></i>
+      <div>
+        <h1>Inventário de Máquinas</h1>
+        <p>Coleta automática de hardware, sistema e softwares</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-outline" onclick="carregar()"><i class="ti ti-refresh"></i> Atualizar</button>
+      <button class="btn-primary" onclick="exportarCsv()"><i class="ti ti-download"></i> Exportar CSV</button>
+    </div>
+  </header>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="toolbar">
+    <input type="text" id="busca" placeholder="Buscar por hostname, usuário, modelo, IP..." oninput="renderTabela()">
+    <select id="filtroFabricante" onchange="renderTabela()"><option value="">Todos os fabricantes</option></select>
+  </div>
+
+  <div class="tabela-box">
+    <table id="tabela">
+      <thead>
+        <tr>
+          <th onclick="ordenarPor('hostname')">Hostname</th>
+          <th onclick="ordenarPor('usuario')">Usuário</th>
+          <th onclick="ordenarPor('fabricante')">Fabricante / Modelo</th>
+          <th onclick="ordenarPor('cpu')">CPU</th>
+          <th onclick="ordenarPor('ramGB')">RAM</th>
+          <th onclick="ordenarPor('sistemaOperacional')">SO</th>
+          <th onclick="ordenarPor('ips')">IP</th>
+          <th onclick="ordenarPor('qtdSoftwares')">Softwares</th>
+          <th onclick="ordenarPor('atualizadoEm')">Atualizado em</th>
+        </tr>
+      </thead>
+      <tbody id="corpoTabela"><tr><td colspan="9" class="loading">Carregando...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) fecharModal()">
+  <div class="modal" id="modalConteudo"></div>
+</div>
+
+<script>
+  // Cole aqui a URL do Web App do Apps Script (apps-script-inventario.gs)
+  const FIREBASE_DB_URL = 'COLE_AQUI_A_URL_DO_SEU_FIREBASE_REALTIME_DATABASE';
+
+  let maquinas = [];
+  let ordenacao = { campo: 'hostname', asc: true };
+
+  function resumoTexto(lista, montar) {
+    return (lista || []).map(montar).filter(Boolean).join(' | ');
+  }
+
+  function converterMaquina(d) {
+    return {
+      atualizadoEm: d.timestamp || '',
+      hostname: d.hostname || '',
+      usuario: d.usuarioLogado || '',
+      dominio: d.dominio || '',
+      fabricante: d.fabricante || '',
+      modelo: d.modelo || '',
+      numeroSerie: d.numeroSerie || '',
+      patrimonio: d.patrimonio || '',
+      cpu: d.cpu ? d.cpu.nome : '',
+      nucleos: d.cpu ? d.cpu.nucleos : '',
+      ramGB: d.ramTotalGB || 0,
+      discosResumo: resumoTexto(d.discos, x => `${x.modelo} (${x.tamanhoGB}GB${x.tipo && x.tipo !== 'N/A' ? ', ' + x.tipo : ''})`),
+      gpuResumo: resumoTexto(d.gpus, x => x.nome),
+      sistemaOperacional: d.sistemaOperacional ? d.sistemaOperacional.nome : '',
+      versaoSO: d.sistemaOperacional ? d.sistemaOperacional.versao : '',
+      ips: resumoTexto(d.rede, x => x.ip),
+      macs: resumoTexto(d.rede, x => x.mac),
+      qtdSoftwares: (d.softwares || []).length,
+      detalhes: d
+    };
+  }
+
+  async function carregar() {
+    document.getElementById('corpoTabela').innerHTML = '<tr><td colspan="9" class="loading">Carregando...</td></tr>';
+    try {
+      const resp = await fetch(FIREBASE_DB_URL.replace(/\/$/, '') + '/maquinas.json');
+      const data = await resp.json();
+      if (data && data.error) throw new Error(data.error);
+      maquinas = data ? Object.values(data).map(converterMaquina) : [];
+      montarFiltroFabricante();
+      renderCards();
+      renderTabela();
+    } catch (err) {
+      document.getElementById('corpoTabela').innerHTML =
+        '<tr><td colspan="9" class="vazio">Não foi possível carregar os dados. Verifique a URL do Firebase.<br><small>' + err.message + '</small></td></tr>';
+    }
+  }
+
+  function montarFiltroFabricante() {
+    const sel = document.getElementById('filtroFabricante');
+    const atuais = new Set(Array.from(sel.options).map(o => o.value));
+    [...new Set(maquinas.map(m => m.fabricante).filter(Boolean))].sort().forEach(f => {
+      if (!atuais.has(f)) {
+        const opt = document.createElement('option');
+        opt.value = f; opt.textContent = f;
+        sel.appendChild(opt);
+      }
+    });
+  }
+
+  function renderCards() {
+    const totalRam = maquinas.reduce((s, m) => s + (parseFloat(m.ramGB) || 0), 0);
+    const fabricantes = new Set(maquinas.map(m => m.fabricante).filter(Boolean));
+    const totalSoftwares = maquinas.reduce((s, m) => s + (parseInt(m.qtdSoftwares) || 0), 0);
+    document.getElementById('cards').innerHTML = `
+      <div class="card"><div class="lbl">Máquinas</div><div class="val">${maquinas.length}</div></div>
+      <div class="card"><div class="lbl">Fabricantes</div><div class="val">${fabricantes.size}</div></div>
+      <div class="card"><div class="lbl">RAM total</div><div class="val">${totalRam.toFixed(0)} GB</div></div>
+      <div class="card"><div class="lbl">Softwares (soma)</div><div class="val">${totalSoftwares}</div></div>
+    `;
+  }
+
+  function ordenarPor(campo) {
+    if (ordenacao.campo === campo) ordenacao.asc = !ordenacao.asc;
+    else { ordenacao.campo = campo; ordenacao.asc = true; }
+    renderTabela();
+  }
+
+  function renderTabela() {
+    const termo = document.getElementById('busca').value.toLowerCase();
+    const fabricanteSel = document.getElementById('filtroFabricante').value;
+
+    let lista = maquinas.filter(m => {
+      const alvo = [m.hostname, m.usuario, m.fabricante, m.modelo, m.cpu, m.ips, m.sistemaOperacional].join(' ').toLowerCase();
+      const passaBusca = !termo || alvo.includes(termo);
+      const passaFabricante = !fabricanteSel || m.fabricante === fabricanteSel;
+      return passaBusca && passaFabricante;
+    });
+
+    lista.sort((a, b) => {
+      let va = a[ordenacao.campo] ?? '', vb = b[ordenacao.campo] ?? '';
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      if (va < vb) return ordenacao.asc ? -1 : 1;
+      if (va > vb) return ordenacao.asc ? 1 : -1;
+      return 0;
+    });
+
+    const corpo = document.getElementById('corpoTabela');
+    if (lista.length === 0) {
+      corpo.innerHTML = '<tr><td colspan="9" class="vazio">Nenhuma máquina encontrada.</td></tr>';
+      return;
+    }
+    corpo.innerHTML = lista.map((m, i) => `
+      <tr onclick="abrirModal('${m.hostname.replace(/'/g, "\\'")}')">
+        <td><strong>${escapeHtml(m.hostname)}</strong></td>
+        <td>${escapeHtml(m.usuario)}</td>
+        <td>${escapeHtml(m.fabricante)} ${escapeHtml(m.modelo)}</td>
+        <td>${escapeHtml(m.cpu)}</td>
+        <td>${m.ramGB} GB</td>
+        <td><span class="badge">${escapeHtml(m.sistemaOperacional)}</span></td>
+        <td>${escapeHtml(m.ips)}</td>
+        <td>${m.qtdSoftwares}</td>
+        <td>${escapeHtml(m.atualizadoEm)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function escapeHtml(v) {
+    if (v === null || v === undefined) return '';
+    return v.toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function abrirModal(hostname) {
+    const m = maquinas.find(x => x.hostname === hostname);
+    if (!m) return;
+    const d = m.detalhes || {};
+    const discos = (d.discos || []).map(x => `<tr><td>${escapeHtml(x.modelo)}</td><td>${x.tamanhoGB} GB</td><td>${escapeHtml(x.tipo)}</td></tr>`).join('') || '<tr><td colspan="3">Sem dados</td></tr>';
+    const rede = (d.rede || []).map(x => `<tr><td>${escapeHtml(x.nome)}</td><td>${escapeHtml(x.ip)}</td><td>${escapeHtml(x.mac)}</td></tr>`).join('') || '<tr><td colspan="3">Sem dados</td></tr>';
+    const gpus = (d.gpus || []).map(x => `<tr><td>${escapeHtml(x.nome)}</td><td>${x.vramMB || ''} MB</td></tr>`).join('') || '<tr><td colspan="2">Sem dados</td></tr>';
+    const softwaresHtml = (d.softwares || []).map(x => `<tr><td>${escapeHtml(x.nome)}</td><td>${escapeHtml(x.versao)}</td><td>${escapeHtml(x.fabricante)}</td></tr>`).join('');
+
+    document.getElementById('modalConteudo').innerHTML = `
+      <div class="modal-header">
+        <div>
+          <h2>${escapeHtml(m.hostname)}</h2>
+          <div class="sub">Atualizado em ${escapeHtml(m.atualizadoEm)} &middot; Usuário: ${escapeHtml(m.usuario)} &middot; ${escapeHtml(m.dominio)}</div>
+        </div>
+        <button class="modal-close" onclick="fecharModal()">&times;</button>
+      </div>
+      <div class="modal-grid">
+        <div class="box"><div class="lbl">Fabricante / Modelo</div><div class="val">${escapeHtml(m.fabricante)} ${escapeHtml(m.modelo)}</div></div>
+        <div class="box"><div class="lbl">Número de série</div><div class="val">${escapeHtml(m.numeroSerie)}</div></div>
+        <div class="box"><div class="lbl">Processador</div><div class="val">${escapeHtml(m.cpu)}</div></div>
+        <div class="box"><div class="lbl">RAM total</div><div class="val">${m.ramGB} GB</div></div>
+        <div class="box"><div class="lbl">Sistema Operacional</div><div class="val">${escapeHtml(m.sistemaOperacional)} (${escapeHtml(m.versaoSO)})</div></div>
+        <div class="box"><div class="lbl">Patrimônio</div><div class="val">${escapeHtml(m.patrimonio) || '—'}</div></div>
+      </div>
+      <section><h3>Discos</h3><table>${discos}</table></section>
+      <section><h3>Placa de vídeo</h3><table>${gpus}</table></section>
+      <section><h3>Rede</h3><table>${rede}</table></section>
+      <section>
+        <h3>Softwares instalados (${(d.softwares || []).length})</h3>
+        <input type="text" class="soft-search" placeholder="Filtrar softwares..." oninput="filtrarSoftwares(this)">
+        <div style="max-height:260px; overflow:auto;">
+          <table id="tabelaSoftwares">${softwaresHtml}</table>
+        </div>
+      </section>
+    `;
+    document.getElementById('modalOverlay').classList.add('aberto');
+  }
+
+  function filtrarSoftwares(input) {
+    const termo = input.value.toLowerCase();
+    document.querySelectorAll('#tabelaSoftwares tr').forEach(tr => {
+      tr.style.display = tr.textContent.toLowerCase().includes(termo) ? '' : 'none';
+    });
+  }
+
+  function fecharModal() {
+    document.getElementById('modalOverlay').classList.remove('aberto');
+  }
+
+  function exportarCsv() {
+    if (maquinas.length === 0) return;
+    const colunas = ['hostname','usuario','dominio','fabricante','modelo','numeroSerie','patrimonio','cpu','nucleos','ramGB','discosResumo','gpuResumo','sistemaOperacional','versaoSO','ips','macs','qtdSoftwares','atualizadoEm'];
+    const linhas = [colunas.join(';')].concat(
+      maquinas.map(m => colunas.map(c => `"${(m[c] ?? '').toString().replace(/"/g, '""')}"`).join(';'))
+    );
+    const blob = new Blob(['﻿' + linhas.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'inventario_maquinas.csv';
+    link.click();
+  }
+
+  carregar();
+</script>
+</body>
+</html>

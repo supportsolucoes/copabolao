@@ -42,3 +42,9 @@ O arquivo `codigo-apps-script.gs` contém o script que salva os palpites no Goog
 1. Vá em **Settings → Pages**
 2. Source: `main` branch → `/root`
 3. Acesse em: `https://supportsolucoes.github.io/copabolao`
+
+---
+
+# 🖥️ Inventário de Máquinas
+
+Este repositório também contém, na pasta [`inventario/`](inventario/), uma ferramenta plug-and-play separada para levantar configuração e modelo de computadores Windows (hardware, sistema, rede e softwares instalados) e consolidar tudo num painel central. Veja [`inventario/README.md`](inventario/README.md) para o passo a passo completo.
