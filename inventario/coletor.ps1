@@ -4,9 +4,11 @@
 # ============================================================
 
 # --------- CONFIGURACAO ---------
-# Cole aqui a URL do Web App do Google Apps Script (ver apps-script-inventario.gs).
-# Deixe como esta se quiser usar so o relatorio local, sem enviar para a planilha.
-$APPS_SCRIPT_URL = 'COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT'
+# Cole aqui a Database URL do seu Firebase Realtime Database e o token secreto
+# configurado nas regras de seguranca (ver inventario/README.md).
+# Deixe como esta se quiser usar so o relatorio local, sem enviar para o Firebase.
+$FIREBASE_DB_URL = 'COLE_AQUI_A_URL_DO_SEU_FIREBASE_REALTIME_DATABASE'
+$FIREBASE_TOKEN  = 'COLE_AQUI_O_TOKEN_SECRETO_DAS_REGRAS'
 
 $ErrorActionPreference = 'SilentlyContinue'
 $ScriptVersao = '1.0'
@@ -262,24 +264,29 @@ Write-Host "Relatorio salvo em:" -ForegroundColor Green
 Write-Host "  $caminhoHtml"
 Write-Host "  $caminhoJson"
 
-# --------- ENVIA PARA A PLANILHA CENTRAL ---------
-if ($APPS_SCRIPT_URL -and $APPS_SCRIPT_URL -notmatch 'COLE_AQUI') {
+# --------- ENVIA PARA O FIREBASE (INVENTARIO CENTRAL) ---------
+if ($FIREBASE_DB_URL -and $FIREBASE_DB_URL -notmatch 'COLE_AQUI') {
     Write-Host ""
-    Escreve-Etapa "Enviando dados para a planilha central..."
+    Escreve-Etapa "Enviando dados para o inventario central (Firebase)..."
     try {
-        $resposta = Invoke-RestMethod -Uri $APPS_SCRIPT_URL -Method Post -Body $json -ContentType 'application/json; charset=utf-8' -TimeoutSec 30
-        if ($resposta.sucesso) {
-            Write-Host "Enviado com sucesso para o inventario central." -ForegroundColor Green
-        } else {
-            Write-Host "A planilha respondeu com erro: $($resposta.erro)" -ForegroundColor Yellow
-        }
+        $chave = ($dados.hostname -replace '[.#$\[\]/]', '_')
+        $urlBase = $FIREBASE_DB_URL.TrimEnd('/')
+
+        # Primeiro grava o token num no separado (sem permissao de leitura) para liberar a regra de escrita abaixo.
+        $tokenJson = $FIREBASE_TOKEN | ConvertTo-Json
+        Invoke-RestMethod -Uri "$urlBase/chaves/$chave.json" -Method Put -Body $tokenJson -ContentType 'application/json; charset=utf-8' -TimeoutSec 30 | Out-Null
+
+        # Depois grava os dados da maquina (permitido pela regra por causa do token gravado acima).
+        Invoke-RestMethod -Uri "$urlBase/maquinas/$chave.json" -Method Put -Body $json -ContentType 'application/json; charset=utf-8' -TimeoutSec 30 | Out-Null
+
+        Write-Host "Enviado com sucesso para o inventario central." -ForegroundColor Green
     } catch {
-        Write-Host "Nao foi possivel enviar para a planilha central (sem internet ou URL invalida)." -ForegroundColor Yellow
+        Write-Host "Nao foi possivel enviar para o inventario central (sem internet, URL invalida ou token incorreto nas regras)." -ForegroundColor Yellow
         Write-Host "O relatorio local foi salvo normalmente." -ForegroundColor Yellow
     }
 } else {
     Write-Host ""
-    Write-Host "Envio automatico desativado (URL do Apps Script nao configurada)." -ForegroundColor DarkYellow
+    Write-Host "Envio automatico desativado (URL do Firebase nao configurada)." -ForegroundColor DarkYellow
 }
 
 Write-Host ""

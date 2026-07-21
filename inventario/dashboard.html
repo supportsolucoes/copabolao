@@ -114,24 +114,52 @@
 
 <script>
   // Cole aqui a URL do Web App do Apps Script (apps-script-inventario.gs)
-  const APPS_SCRIPT_URL = 'COLE_AQUI_A_URL_DO_SEU_APPS_SCRIPT';
+  const FIREBASE_DB_URL = 'COLE_AQUI_A_URL_DO_SEU_FIREBASE_REALTIME_DATABASE';
 
   let maquinas = [];
   let ordenacao = { campo: 'hostname', asc: true };
 
+  function resumoTexto(lista, montar) {
+    return (lista || []).map(montar).filter(Boolean).join(' | ');
+  }
+
+  function converterMaquina(d) {
+    return {
+      atualizadoEm: d.timestamp || '',
+      hostname: d.hostname || '',
+      usuario: d.usuarioLogado || '',
+      dominio: d.dominio || '',
+      fabricante: d.fabricante || '',
+      modelo: d.modelo || '',
+      numeroSerie: d.numeroSerie || '',
+      patrimonio: d.patrimonio || '',
+      cpu: d.cpu ? d.cpu.nome : '',
+      nucleos: d.cpu ? d.cpu.nucleos : '',
+      ramGB: d.ramTotalGB || 0,
+      discosResumo: resumoTexto(d.discos, x => `${x.modelo} (${x.tamanhoGB}GB${x.tipo && x.tipo !== 'N/A' ? ', ' + x.tipo : ''})`),
+      gpuResumo: resumoTexto(d.gpus, x => x.nome),
+      sistemaOperacional: d.sistemaOperacional ? d.sistemaOperacional.nome : '',
+      versaoSO: d.sistemaOperacional ? d.sistemaOperacional.versao : '',
+      ips: resumoTexto(d.rede, x => x.ip),
+      macs: resumoTexto(d.rede, x => x.mac),
+      qtdSoftwares: (d.softwares || []).length,
+      detalhes: d
+    };
+  }
+
   async function carregar() {
     document.getElementById('corpoTabela').innerHTML = '<tr><td colspan="9" class="loading">Carregando...</td></tr>';
     try {
-      const resp = await fetch(APPS_SCRIPT_URL + '?action=inventario');
+      const resp = await fetch(FIREBASE_DB_URL.replace(/\/$/, '') + '/maquinas.json');
       const data = await resp.json();
-      if (!data.sucesso) throw new Error(data.erro || 'Falha ao carregar');
-      maquinas = data.maquinas || [];
+      if (data && data.error) throw new Error(data.error);
+      maquinas = data ? Object.values(data).map(converterMaquina) : [];
       montarFiltroFabricante();
       renderCards();
       renderTabela();
     } catch (err) {
       document.getElementById('corpoTabela').innerHTML =
-        '<tr><td colspan="9" class="vazio">Não foi possível carregar os dados. Verifique a URL do Apps Script.<br><small>' + err.message + '</small></td></tr>';
+        '<tr><td colspan="9" class="vazio">Não foi possível carregar os dados. Verifique a URL do Firebase.<br><small>' + err.message + '</small></td></tr>';
     }
   }
 
